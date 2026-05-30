@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:17-alpine
+    container_name: cash_flow_postgres_container
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret_password_prototype
+      POSTGRES_DB: cash_flow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+    driver: local

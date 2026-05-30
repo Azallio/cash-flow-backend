@@ -7,6 +7,7 @@ import { join } from 'path';
 import { LoggerModule } from 'nestjs-pino';
 import { stdSerializers } from 'pino-http';
 import { UserModule } from './user/user.module';
+import { AuthService } from './auth/auth.service';
 
 @Module({
   imports: [
@@ -32,5 +33,6 @@ import { UserModule } from './user/user.module';
       rootPath: join(__dirname, '..', 'public'),
     }),
   ],
+  providers: [AuthService],
 })
 export class AppModule {}

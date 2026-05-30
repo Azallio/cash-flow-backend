@@ -7,9 +7,9 @@ import {
   Put,
   Scope,
 } from '@nestjs/common';
-import { UserService } from './user.service';
 import { CreateUserRequest } from './DTO/request/createUser.request';
 import { UpdateUserNameRequest } from './DTO/request/updateUserName.request';
+import { UserService } from './user.service';
 
 @Controller({ scope: Scope.REQUEST, path: 'user' })
 export class UserController {
@@ -17,14 +17,14 @@ export class UserController {
 
   @Post()
   public async createUser(@Body() dto: CreateUserRequest) {
-    await this.userService.createUser(dto.name);
+    await this.userService.createUser(dto.email, dto.passwordHash);
   }
 
   @Put(':id')
-  public async updateUserName(
+  public async updateUserEmail(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserNameRequest,
   ) {
-    await this.userService.updateUserName(id, dto.name);
+    await this.userService.updateUserEmail(id, dto.email);
   }
 }
