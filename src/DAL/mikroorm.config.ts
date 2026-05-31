@@ -4,11 +4,11 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: `.${process.env.NODE_ENV}.env` });
 
 export default defineConfig({
-  entities: ['./dist/DAL/entities'],
+  entities: ['./dist/src/DAL/entities'],
   entitiesTs: ['./src/DAL/entities'],
   migrations: {
     snapshotName: '.snapshot-mysterybox',
-    path: './dist/DAL/migrations',
+    path: './dist/src/DAL/migrations',
     pathTs: './src/DAL/migrations',
     disableForeignKeys: false,
     transactional: true,

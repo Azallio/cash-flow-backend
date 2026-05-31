@@ -7,7 +7,7 @@ import { stdSerializers } from 'pino-http';
 import { DatabaseModule } from './DAL/database.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from './configuration/config.module';
-import { UsersModule } from './user/user.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -30,7 +30,7 @@ import { UsersModule } from './user/user.module';
     }),
     DatabaseModule,
     AuthModule,
-    UsersModule,
+    UserModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
