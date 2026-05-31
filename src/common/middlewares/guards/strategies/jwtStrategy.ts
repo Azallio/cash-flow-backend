@@ -6,11 +6,11 @@ import {
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '../../../../configuration/config.service';
 import { JwtPayload } from '../../../models/jwtPayload';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
 
 @Injectable({ scope: Scope.DEFAULT })
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: _configService.jwtModuleConfig.secret,
+      secretOrKey: _configService.jwtModuleConfig.secret as string,
     });
   }
 

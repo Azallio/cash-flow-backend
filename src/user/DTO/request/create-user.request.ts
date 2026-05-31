@@ -8,5 +8,5 @@ export class CreateUserRequest {
 
   @IsString()
   @ApiProperty()
-  passwordHash!: string;
+  password!: string;
 }

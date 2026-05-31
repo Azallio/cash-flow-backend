@@ -1,30 +1,58 @@
 import {
-  Body,
   Controller,
+  Delete,
+  Get,
   Param,
-  ParseIntPipe,
-  Post,
-  Put,
+  Req,
   Scope,
+  UseGuards,
 } from '@nestjs/common';
-import { CreateUserRequest } from './DTO/request/createUser.request';
-import { UpdateUserNameRequest } from './DTO/request/updateUserName.request';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
+import { RequestWithUser } from './DTO/request/request-with-user.request';
 import { UserService } from './user.service';
 
-@Controller({ scope: Scope.REQUEST, path: 'user' })
-export class UserController {
+@ApiTags('Users')
+@Controller({ scope: Scope.REQUEST, path: 'users' })
+export class UsersController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  public async createUser(@Body() dto: CreateUserRequest) {
-    await this.userService.createUser(dto.email, dto.passwordHash);
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('jwt')
+  @ApiResponse({
+    status: 200,
+    description: 'User information object',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid credentials',
+  })
+  @Get('me')
+  getMe(@Req() req: RequestWithUser) {
+    return req.user;
   }
 
-  @Put(':id')
-  public async updateUserEmail(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateUserNameRequest,
-  ) {
-    await this.userService.updateUserEmail(id, dto.email);
+  @Get()
+  @ApiResponse({
+    status: 200,
+    description: 'List of all users',
+  })
+  public async getAllUsers() {
+    return this.userService.findAll();
+  }
+
+  @Delete(':id')
+  @ApiResponse({
+    status: 200,
+    description: 'User deleted successfully',
+  })
+  @ApiOperation({ summary: 'Delete a user by ID' })
+  public async deleteUser(@Param('id') id: number) {
+    await this.userService.deleteUser(id);
   }
 }

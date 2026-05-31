@@ -1,12 +1,12 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import DatabaseConfig from './DAL/mikroorm.config';
 import { MikroORM } from '@mikro-orm/core';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
 import { ApiResponseFormatMiddleware } from './common/middlewares/apiResponseFormat.middleware';
 import { ErrorHandlerMiddleware } from './common/middlewares/errorHandler.middleware';
 import { ConfigService } from './configuration/config.service';
+import DatabaseConfig from './DAL/mikroorm.config';
 import { SeedService } from './DAL/seed.service';
 
 class Application {
@@ -44,7 +44,7 @@ class Application {
     const mikroOrm = await MikroORM.init(DatabaseConfig);
     if (cleanUp) await mikroOrm.schema.dropDatabase();
 
-    const migrator = mikroOrm.getMigrator();
+    const migrator = mikroOrm.migrator;
     await migrator.up();
 
     if (seed) {

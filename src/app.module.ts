@@ -1,18 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from './DAL/database.module';
-import { ConfigModule } from './configuration/config.module';
+import { Module, RequestMethod } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { LoggerModule } from 'nestjs-pino';
+import { join } from 'path';
 import { stdSerializers } from 'pino-http';
-import { UserModule } from './user/user.module';
-import { AuthService } from './auth/auth.service';
+import { DatabaseModule } from './DAL/database.module';
+import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from './configuration/config.module';
+import { UsersModule } from './user/user.module';
 
 @Module({
   imports: [
     ConfigModule,
     LoggerModule.forRoot({
+      forRoutes: [{ method: RequestMethod.ALL, path: '/api/*path' }],
       pinoHttp: {
         serializers: {
           req(req: any) {
@@ -28,11 +29,11 @@ import { AuthService } from './auth/auth.service';
       },
     }),
     DatabaseModule,
-    UserModule,
+    AuthModule,
+    UsersModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
   ],
-  providers: [AuthService],
 })
 export class AppModule {}

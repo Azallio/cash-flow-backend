@@ -2,9 +2,11 @@ import { Entity, ManyToOne, Property } from '@mikro-orm/core';
 import { BaseEntity } from './base.entity';
 import { UserEntity } from './user.entity';
 
-@Entity({ tableName: 'refresh_tokens' })
+@Entity()
 export class RefreshTokenEntity extends BaseEntity {
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, {
+    deleteRule: 'cascade',
+  })
   user: UserEntity;
 
   @Property()

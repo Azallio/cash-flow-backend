@@ -10,7 +10,7 @@ import { CategoryEntity } from './category.entity';
 import { RefreshTokenEntity } from './refresh-token.entity';
 import { TransactionEntity } from './transaction.entity';
 
-@Entity({ tableName: 'users' })
+@Entity()
 export class UserEntity extends BaseEntity {
   @Unique()
   @Property()
