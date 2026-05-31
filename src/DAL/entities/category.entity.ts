@@ -12,12 +12,12 @@ export class CategoryEntity extends BaseEntity {
 
   title: string;
 
-  description: string;
+  description?: string;
 
   @OneToMany(() => TransactionEntity, (transaction) => transaction.category)
   transactions = new Collection<TransactionEntity>(this);
 
-  constructor(user: UserEntity, title: string, description: string) {
+  constructor(user: UserEntity, title: string, description?: string) {
     super();
 
     this.user = user;

@@ -8,6 +8,8 @@ import { DatabaseModule } from './DAL/database.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from './configuration/config.module';
 import { UserModule } from './user/user.module';
+import { TransactionModule } from './transaction/transaction.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { UserModule } from './user/user.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
+    TransactionModule,
+    CategoryModule,
   ],
 })
 export class AppModule {}

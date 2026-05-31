@@ -15,8 +15,20 @@ export class UserService {
     private readonly userRepository: EntityRepository<UserEntity>,
   ) {}
 
-  public async findByEmail(email: string): Promise<UserEntity | null> {
-    return this.userRepository.findOne({ email });
+  public async findByEmail(email: string): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({ email });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  public async getUserById(id: number): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({ id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 
   public async createUser(email: string, password: string) {
