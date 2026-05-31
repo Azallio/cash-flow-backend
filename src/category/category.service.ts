@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { CategoryEntity } from '../DAL/entities/category.entity';
 import { UserService } from '../user/user.service';
 import { CreateCategoryRequest } from './DTO/create-category.request';
-import { UpdateCategoryRequest } from './DTO/update-catgory.request';
+import { UpdateCategoryRequest } from './DTO/update-category.request';
 
 @Injectable()
 export class CategoryService {
