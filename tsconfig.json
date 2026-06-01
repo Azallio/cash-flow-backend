@@ -8,8 +8,8 @@
     "allowSyntheticDefaultImports": true,
     "target": "ES2021",
     "sourceMap": true,
+    "rootDir": "./",
     "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": false,
@@ -17,6 +17,6 @@
     "strict": true,
     "strictNullChecks": true,
     "noImplicitAny": true,
-    "strictBindCallApply": true,
+    "strictBindCallApply": true
   }
 }

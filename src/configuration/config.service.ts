@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService } from '@nestjs/config';
-import { FormatError } from '../common/errors/format.error';
-import { EnvPropertyNotFoundError } from '../common/errors/envPropertyNotFound.error';
 import { JwtModuleOptions } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
+import { EnvPropertyNotFoundError } from '../common/errors/envPropertyNotFound.error';
+import { FormatError } from '../common/errors/format.error';
 
 @Injectable()
 export class ConfigService {
@@ -22,7 +23,7 @@ export class ConfigService {
       global: true,
       secret: this.readString('JWT_SECRET'),
       signOptions: {
-        expiresIn: this.readString('JWT_ACCESS_LIFETIME'),
+        expiresIn: this.readString('JWT_ACCESS_LIFETIME') as StringValue,
       },
     };
   }

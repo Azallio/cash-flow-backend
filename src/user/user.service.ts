@@ -1,34 +1,59 @@
-import { Injectable, NotFoundException, Scope } from '@nestjs/common';
-import { UserEntity } from '../DAL/entities/user.entity';
-import { EntityRepository } from '@mikro-orm/postgresql';
-import { ConfigService } from '../configuration/config.service';
 import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  Scope,
+} from '@nestjs/common';
+import { UserEntity } from '../DAL/entities/user.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class UserService {
   constructor(
-    private readonly configService: ConfigService,
-
     @InjectRepository(UserEntity)
     private readonly userRepository: EntityRepository<UserEntity>,
   ) {}
 
-  public async createUser(name: string) {
-    const user = new UserEntity(name);
-
-    const em = this.userRepository.getEntityManager();
-    await em.persistAndFlush(user);
+  public async findByEmail(email: string): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({ email });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 
-  public async updateUserName(id: number, name: string) {
+  public async getUserById(id: number): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({ id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  public async createUser(email: string, password: string) {
+    const existingUser = await this.userRepository.findOne({ email });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    const newUser = new UserEntity(email, password);
+
+    const em = this.userRepository.getEntityManager();
+    await em.persist(newUser).flush();
+    return newUser;
+  }
+
+  public async deleteUser(id: number) {
     const user = await this.userRepository.findOne({ id });
     if (user == null) {
       throw new NotFoundException('User not found');
     }
+    await this.userRepository.getEntityManager().remove(user).flush();
+  }
 
-    user.name = name;
-
-    const em = this.userRepository.getEntityManager();
-    await em.flush();
+  public async findAll(): Promise<UserEntity[]> {
+    return this.userRepository.findAll();
   }
 }

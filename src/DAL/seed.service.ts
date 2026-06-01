@@ -5,12 +5,10 @@ import { ConfigService } from '../configuration/config.service';
 
 @Injectable()
 export class SeedService extends Seeder {
-  private readonly _logger: Logger;
+  private readonly logger = new Logger(SeedService.name);
 
   constructor(private readonly configService: ConfigService) {
     super();
-
-    this._logger = new Logger(SeedService.name);
   }
 
   async run(em: EntityManager): Promise<void> {}

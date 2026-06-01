@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsEmail } from 'class-validator';
 
 export class UpdateUserNameRequest {
-  @IsString()
+  @IsEmail()
   @ApiProperty()
-  name!: string;
+  email!: string;
 }
