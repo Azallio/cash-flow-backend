@@ -3,6 +3,7 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
+import { JwtPayload } from '../common/models/jwtPayload';
 import { RefreshTokenEntity } from '../DAL/entities/refresh-token.entity';
 import { UserService } from '../user/user.service';
 import { LoginRequest } from './DTO/requests/login.request';
@@ -49,19 +50,22 @@ export class AuthService {
   ): Promise<LoginResponse> {
     const now = new Date();
 
-    const [id, token] = requestRefreshToken.split('.');
+    const [refreshTokenId, token] = requestRefreshToken.split('-');
 
-    const refreshTokenEntity = await this.refreshTokenRepository.findOne(
-      {
-        id: Number(id),
-        expiresAt: { $gt: now },
-      },
-      {
-        populate: ['user'],
-      },
-    );
+    const payload: JwtPayload = this.jwtService.verify(token);
+
+    const user = await this.userService.getUserById(payload.userId);
+
+    const refreshTokenEntity = await this.refreshTokenRepository.findOne({
+      id: +refreshTokenId,
+      expiresAt: { $gt: now },
+    });
 
     if (!refreshTokenEntity) {
+      throw new UnauthorizedException('Refresh token not found or expired');
+    }
+
+    if (!user || refreshTokenEntity.user.id !== user.id) {
       throw new UnauthorizedException();
     }
 
@@ -71,11 +75,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token');
     }
 
-    this.refreshTokenRepository.getEntityManager().remove(refreshTokenEntity);
+    await this.refreshTokenRepository
+      .getEntityManager()
+      .remove(refreshTokenEntity)
+      .flush();
 
     const tokens = await this.jwtService.generateTokens({
-      email: refreshTokenEntity.user.email,
-      userId: refreshTokenEntity.user.id,
+      email: user.email,
+      userId: user.id,
     });
 
     return new LoginResponse(tokens.accessToken, tokens.refreshToken);

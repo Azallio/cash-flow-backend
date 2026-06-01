@@ -17,6 +17,7 @@ export class CreateTransactionDto {
   @ApiProperty({
     description: 'Type of the transaction',
     example: TransactionType.INCOME,
+    enum: TransactionType,
   })
   transactionType: TransactionType;
 

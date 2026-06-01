@@ -1,7 +1,7 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import { JwtPayload } from '../common/models/jwtPayload';
 import { ConfigService } from '../configuration/config.service';
 import { RefreshTokenEntity } from '../DAL/entities/refresh-token.entity';
@@ -22,18 +22,18 @@ export class JwtService extends NestJwtService {
     return this.signAsync({ ...payload });
   }
 
-  private async generateSecretToken() {
-    return randomBytes(48).toString('base64url');
-  }
+  // private async generateSecretToken() {
+  //   return randomBytes(48).toString('base64url');
+  // }
 
   async generateRefreshToken(payload: JwtPayload): Promise<string> {
     const person = await this.refreshTokenRepository
       .getEntityManager()
       .findOneOrFail(UserEntity, payload.userId);
 
-    person.refreshTokens.removeAll();
-
-    const secretToken = await this.generateSecretToken();
+    const secretToken = await this.generateAccessToken({
+      ...payload,
+    });
 
     const secretTokenHash = createHash('sha256')
       .update(secretToken)
@@ -55,7 +55,7 @@ export class JwtService extends NestJwtService {
       .persist(refreshToken)
       .flush();
 
-    return refreshToken.id + '.' + secretToken;
+    return refreshToken.id + '-' + secretToken;
   }
 
   public async generateTokens(
