@@ -34,6 +34,16 @@ export class CreateTransactionRequest {
   @IsOptional()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  @IsOptional()
+  @ApiProperty({
+    description: 'Creation date of the transaction',
+    example: '2024-06-01T00:00:00Z',
+    required: false,
+  })
+  createdAt?: string;
+
   constructor(
     categoryId: number,
     amount: number,
