@@ -26,9 +26,7 @@ class Application {
     await this.runMigrations(app, true);
     await this.addMiddlewares(app);
 
-    if (process.env.NODE_ENV !== 'stage') {
-      await this.addSwagger(app);
-    }
+    await this.addSwagger(app);
 
     app.setGlobalPrefix('api');
     app.enableCors();
