@@ -1,5 +1,5 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityRepository, FilterQuery } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { CategoryService } from '../category/category.service';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
@@ -43,8 +43,8 @@ export class TransactionService {
     return newTransaction;
   }
 
-  public async findAll() {
-    return `This action returns all transaction`;
+  public async findAll(userId: number) {
+    return await this.findByUserId(userId);
   }
 
   public async findById(id: number) {
@@ -82,6 +82,18 @@ export class TransactionService {
       },
       { populate: ['category', 'user'] },
     );
+    return transactions;
+  }
+
+  public async findMany(where: FilterQuery<TransactionEntity>) {
+    const transactions = await this.transactionRepository.find(where, {
+      populate: ['category', 'user'],
+    });
+
+    if (!transactions || transactions.length === 0) {
+      throw new Error('Transactions not found');
+    }
+
     return transactions;
   }
 

@@ -17,6 +17,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
 import { CategoryService } from './category.service';
 import { CreateCategoryRequest } from './DTO/create-category.request';
@@ -43,8 +44,11 @@ export class CategoryController {
   @ApiUnauthorizedResponse({
     description: 'Missing or invalid JWT token',
   })
-  @Post(':userId')
-  create(@Param('userId') userId: number, @Body() dto: CreateCategoryRequest) {
+  @Post()
+  public async create(
+    @GetUser('id') userId: number,
+    @Body() dto: CreateCategoryRequest,
+  ) {
     return this.categoryService.createCategory(dto, userId);
   }
 
@@ -87,8 +91,8 @@ export class CategoryController {
   }
 
   @ApiOperation({
-    summary: 'Get categories by user ID',
-    description: 'Returns all categories belonging to a specific user',
+    summary: 'Get categories for the authenticated user',
+    description: 'Returns all categories belonging to the authenticated user',
   })
   @ApiResponse({
     status: 200,
@@ -97,8 +101,8 @@ export class CategoryController {
   @ApiNotFoundResponse({
     description: 'User not found or has no categories',
   })
-  @Get(':userId')
-  public async getCategoriesByUserId(@Param('userId') userId: number) {
+  @Get()
+  public async getCategoriesByUserId(@GetUser('id') userId: number) {
     return await this.categoryService.getCategoriesByUserId(userId);
   }
 }
