@@ -20,7 +20,7 @@ export class TransactionService {
     userId: number,
     createTransactionRequest: CreateTransactionRequest,
   ) {
-    const { categoryId, amount, transactionType, description } =
+    const { categoryId, amount, transactionType, description, createdAt } =
       createTransactionRequest;
 
     const user = await this.userService.getUserById(userId);
@@ -33,6 +33,7 @@ export class TransactionService {
       transactionType,
       amount,
       description,
+      createdAt ? new Date(createdAt) : new Date(),
     );
 
     await this.transactionRepository

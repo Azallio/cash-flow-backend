@@ -1,4 +1,4 @@
-import { Entity, Enum, ManyToOne } from '@mikro-orm/core';
+import { Entity, Enum, ManyToOne, Property } from '@mikro-orm/core';
 import { TransactionType } from '../../common/enums/transactions-type.enum';
 import { BaseEntity } from './base.entity';
 import { CategoryEntity } from './category.entity';
@@ -15,8 +15,10 @@ export class TransactionEntity extends BaseEntity {
   @Enum(() => TransactionType)
   transactionType: TransactionType;
 
+  @Property()
   amount: number;
 
+  @Property({ nullable: true })
   description?: string;
 
   constructor(
@@ -25,8 +27,9 @@ export class TransactionEntity extends BaseEntity {
     transactionType: TransactionType,
     amount: number,
     description?: string,
+    createdAt?: Date,
   ) {
-    super();
+    super(createdAt);
 
     this.user = user;
     this.category = category;
