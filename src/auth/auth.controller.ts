@@ -45,4 +45,18 @@ export class AuthController {
   public async register(@Body() dto: RegisterRequest): Promise<LoginResponse> {
     return this.authService.register(dto);
   }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh JWT tokens' })
+  @ApiOkResponse({
+    type: LoginResponse,
+    description: 'New JWT tokens returned',
+  })
+  @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })
+  public async refreshToken(
+    @Body('refreshToken') refreshToken: string,
+  ): Promise<LoginResponse> {
+    return this.authService.refreshToken(refreshToken);
+  }
 }
