@@ -60,8 +60,14 @@ export class CategoryController {
     description: 'Category not found',
   })
   @Patch(':id')
-  update(@Param('id') id: number, @Body() dto: UpdateCategoryRequest) {
-    return this.categoryService.updateCategory({ ...dto, id });
+  public async update(
+    @Param('id') id: number,
+    @Body() dto: UpdateCategoryRequest,
+  ) {
+    return await this.categoryService.updateCategory({
+      ...dto,
+      id,
+    });
   }
 
   @ApiOperation({
@@ -76,8 +82,8 @@ export class CategoryController {
     description: 'Category not found',
   })
   @Delete(':id')
-  delete(@Param('id') id: number) {
-    return this.categoryService.deleteCategory(id);
+  public async remove(@Param('id') id: number) {
+    return await this.categoryService.removeCategory(id);
   }
 
   @ApiOperation({
@@ -92,7 +98,7 @@ export class CategoryController {
     description: 'User not found or has no categories',
   })
   @Get(':userId')
-  getCategoriesByUserId(@Param('userId') userId: number) {
-    return this.categoryService.getCategoriesByUserId(userId);
+  public async getCategoriesByUserId(@Param('userId') userId: number) {
+    return await this.categoryService.getCategoriesByUserId(userId);
   }
 }

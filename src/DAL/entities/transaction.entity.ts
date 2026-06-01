@@ -17,11 +17,14 @@ export class TransactionEntity extends BaseEntity {
 
   amount: number;
 
+  description?: string;
+
   constructor(
     user: UserEntity,
     category: CategoryEntity,
     transactionType: TransactionType,
     amount: number,
+    description?: string,
   ) {
     super();
 
@@ -29,5 +32,6 @@ export class TransactionEntity extends BaseEntity {
     this.category = category;
     this.transactionType = transactionType;
     this.amount = amount;
+    this.description = description;
   }
 }

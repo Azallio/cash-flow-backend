@@ -1,26 +1,118 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
+import { CategoryService } from '../category/category.service';
+import { TransactionEntity } from '../DAL/entities/transaction.entity';
+import { UserService } from '../user/user.service';
 import { CreateTransactionDto } from './DTO/create-transaction.dto';
 import { UpdateTransactionDto } from './DTO/update-transaction.dto';
 
 @Injectable()
 export class TransactionService {
-  create(createTransactionDto: CreateTransactionDto) {
-    return 'This action adds a new transaction';
+  constructor(
+    @InjectRepository(TransactionEntity)
+    private readonly transactionRepository: EntityRepository<TransactionEntity>,
+    private readonly categoryService: CategoryService,
+    private readonly userService: UserService,
+  ) {}
+
+  public async createTransaction(
+    userId: number,
+    createTransactionDto: CreateTransactionDto,
+  ) {
+    const { categoryId, amount, transactionType, description } =
+      createTransactionDto;
+
+    const user = await this.userService.getUserById(userId);
+
+    const category = await this.categoryService.getCategoryById(categoryId);
+
+    const newTransaction = new TransactionEntity(
+      user,
+      category,
+      transactionType,
+      amount,
+      description,
+    );
+
+    await this.transactionRepository
+      .getEntityManager()
+      .persist(newTransaction)
+      .flush();
+
+    return newTransaction;
   }
 
-  findAll() {
+  public async findAll() {
     return `This action returns all transaction`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} transaction`;
+  public async findById(id: number) {
+    const transaction = await this.transactionRepository.findOne(
+      { id },
+      { populate: ['category', 'user'] },
+    );
+
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    return transaction;
   }
 
-  update(id: number, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${id} transaction`;
+  public async findByUserId(userId: number) {
+    const transactions = await this.transactionRepository.find(
+      { user: { id: userId } },
+      { populate: ['category', 'user'] },
+    );
+
+    return transactions;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} transaction`;
+  public async searchTransactions(
+    userId: number,
+    categoryId: number,
+    searchTerm: string,
+  ) {
+    const transactions = await this.transactionRepository.find(
+      {
+        user: { id: userId },
+        category: { id: categoryId },
+        description: { $ilike: `%${searchTerm}%` },
+      },
+      { populate: ['category', 'user'] },
+    );
+    return transactions;
+  }
+
+  public async updateTransaction(
+    id: number,
+    updateTransactionDto: UpdateTransactionDto,
+  ) {
+    const transaction = await this.transactionRepository.findOne({ id });
+
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    this.transactionRepository.assign(transaction, updateTransactionDto);
+    await this.transactionRepository.getEntityManager().flush();
+
+    return transaction;
+  }
+
+  public async removeTransaction(id: number) {
+    const transaction = await this.transactionRepository.findOne({ id });
+
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    await this.transactionRepository
+      .getEntityManager()
+      .remove(transaction)
+      .flush();
+
+    return transaction;
   }
 }

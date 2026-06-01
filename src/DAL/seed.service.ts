@@ -1,6 +1,7 @@
 import { EntityManager } from '@mikro-orm/core';
 import { Seeder } from '@mikro-orm/seeder';
 import { Injectable, Logger } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { ConfigService } from '../configuration/config.service';
 
 @Injectable()
@@ -23,10 +24,11 @@ export class SeedService extends Seeder {
       return;
     }
 
+    const passwordHash = bcrypt.hashSync('SuperSecret123', 10);
+
     const newUser = em.create('UserEntity', {
       email: 'test@example.com',
-      passwordHash:
-        '$2b$10$x7TzXvLZ8wzUzbAs.l7cHuVqwAHCCSDurRsx6aoG9f3EfKnJ2y61m',
+      passwordHash: passwordHash,
     });
 
     await em.persist(newUser).flush();

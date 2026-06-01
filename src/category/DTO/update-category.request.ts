@@ -1,11 +1,12 @@
-export class UpdateCategoryRequest {
-  id: number;
-  title?: string;
-  description?: string;
+import { PartialType } from '@nestjs/swagger';
+import { CreateCategoryRequest } from './create-category.request';
 
-  constructor(id: number, title?: string, description?: string) {
-    this.id = id;
-    this.title = title;
-    this.description = description;
+export class UpdateCategoryRequest extends PartialType(CreateCategoryRequest) {
+  id: number;
+
+  constructor(userId: number, title?: string, description?: string) {
+    super(title, description);
+
+    this.id = userId;
   }
 }

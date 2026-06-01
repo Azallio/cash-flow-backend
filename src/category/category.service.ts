@@ -37,7 +37,15 @@ export class CategoryService {
     return this.categoryRepository.find({ user });
   }
 
-  public async deleteCategory(id: number) {
+  public async getCategoryById(id: number): Promise<CategoryEntity> {
+    const category = await this.categoryRepository.findOne({ id });
+    if (!category) {
+      throw new Error('Category not found');
+    }
+    return category;
+  }
+
+  public async removeCategory(id: number) {
     const category = await this.categoryRepository.findOne({ id });
     if (!category) {
       throw new Error('Category not found');
