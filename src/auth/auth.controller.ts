@@ -15,9 +15,9 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginRequest } from './DTO/requests/login.request';
-import { RegisterRequest } from './DTO/requests/register.request';
-import { LoginResponse } from './DTO/responses/login.response';
+import { LoginRequest } from './DTO/request/login.request';
+import { RegisterRequest } from './DTO/request/register.request';
+import { LoginResponse } from './DTO/response/login.response';
 
 @ApiTags('Auth')
 @Controller({ scope: Scope.REQUEST, path: 'auth' })

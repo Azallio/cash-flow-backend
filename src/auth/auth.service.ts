@@ -6,8 +6,8 @@ import { createHash } from 'crypto';
 import { JwtPayload } from '../common/models/jwtPayload';
 import { RefreshTokenEntity } from '../DAL/entities/refresh-token.entity';
 import { UserService } from '../user/user.service';
-import { LoginRequest } from './DTO/requests/login.request';
-import { LoginResponse } from './DTO/responses/login.response';
+import { LoginRequest } from './DTO/request/login.request';
+import { LoginResponse } from './DTO/response/login.response';
 import { JwtService } from './jwt.service';
 
 @Injectable()

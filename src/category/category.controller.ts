@@ -20,12 +20,12 @@ import {
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
 import { CategoryService } from './category.service';
-import { CreateCategoryRequest } from './DTO/create-category.request';
-import { UpdateCategoryRequest } from './DTO/update-category.request';
+import { CreateCategoryRequest } from './DTO/request/create-category.request';
+import { UpdateCategoryRequest } from './DTO/request/update-category.request';
 
 @ApiTags('Categories')
-@ApiBearerAuth('jwt')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('jwt')
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
@@ -102,7 +102,7 @@ export class CategoryController {
     description: 'User not found or has no categories',
   })
   @Get()
-  public async getCategoriesByUserId(@GetUser('id') userId: number) {
+  public async get(@GetUser('userId') userId: number) {
     return await this.categoryService.getCategoriesByUserId(userId);
   }
 }

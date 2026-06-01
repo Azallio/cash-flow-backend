@@ -19,13 +19,13 @@ import {
 } from '@nestjs/swagger';
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
-import { CreateTransactionDto } from './DTO/create-transaction.dto';
-import { UpdateTransactionDto } from './DTO/update-transaction.dto';
+import { CreateTransactionRequest } from './DTO/create-transaction.request';
+import { UpdateTransactionRequest } from './DTO/update-transaction.requets';
 import { TransactionService } from './transaction.service';
 
 @ApiTags('Transactions')
-@ApiBearerAuth('jwt')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('jwt')
 @Controller('transactions')
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
@@ -41,16 +41,16 @@ export class TransactionController {
     description: 'Unauthorized',
   })
   @ApiOkResponse({
-    type: CreateTransactionDto,
+    type: CreateTransactionRequest,
     description: 'Transaction successfully created',
   })
   create(
     @GetUser('id') userId: number,
-    @Body() createTransactionDto: CreateTransactionDto,
+    @Body() createTransactionRequest: CreateTransactionRequest,
   ) {
     return this.transactionService.createTransaction(
       userId,
-      createTransactionDto,
+      createTransactionRequest,
     );
   }
 
@@ -112,12 +112,12 @@ export class TransactionController {
     description: 'Unauthorized',
   })
   @ApiOkResponse({
-    type: UpdateTransactionDto,
+    type: UpdateTransactionRequest,
     description: 'Transaction successfully updated',
   })
   update(
     @Param('id') id: string,
-    @Body() updateTransactionDto: UpdateTransactionDto,
+    @Body() updateTransactionDto: UpdateTransactionRequest,
   ) {
     return this.transactionService.updateTransaction(+id, updateTransactionDto);
   }
