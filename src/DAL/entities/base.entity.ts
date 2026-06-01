@@ -16,4 +16,10 @@ export abstract class BaseEntity {
 
   @Property({ onUpdate: () => new Date() })
   public updatedAt: Date = new Date();
+
+  constructor(createdAt?: Date) {
+    if (createdAt) {
+      this.createdAt = createdAt;
+    }
+  }
 }
