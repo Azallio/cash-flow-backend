@@ -4,8 +4,8 @@ import { Injectable } from '@nestjs/common';
 import { CategoryService } from '../category/category.service';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
 import { UserService } from '../user/user.service';
-import { CreateTransactionDto } from './DTO/create-transaction.dto';
-import { UpdateTransactionDto } from './DTO/update-transaction.dto';
+import { CreateTransactionRequest } from './DTO/create-transaction.request';
+import { UpdateTransactionRequest } from './DTO/update-transaction.requets';
 
 @Injectable()
 export class TransactionService {
@@ -18,10 +18,10 @@ export class TransactionService {
 
   public async createTransaction(
     userId: number,
-    createTransactionDto: CreateTransactionDto,
+    createTransactionRequest: CreateTransactionRequest,
   ) {
     const { categoryId, amount, transactionType, description } =
-      createTransactionDto;
+      createTransactionRequest;
 
     const user = await this.userService.getUserById(userId);
 
@@ -82,6 +82,13 @@ export class TransactionService {
       },
       { populate: ['category', 'user'] },
     );
+
+    if (transactions.length === 0) {
+      return [];
+    } else if (!transactions) {
+      throw new Error('No transactions found matching the search criteria');
+    }
+
     return transactions;
   }
 
@@ -90,8 +97,10 @@ export class TransactionService {
       populate: ['category', 'user'],
     });
 
-    if (!transactions || transactions.length === 0) {
-      throw new Error('Transactions not found');
+    if (transactions.length === 0) {
+      return [];
+    } else if (!transactions) {
+      throw new Error('No transactions found matching the search criteria');
     }
 
     return transactions;
@@ -99,7 +108,7 @@ export class TransactionService {
 
   public async updateTransaction(
     id: number,
-    updateTransactionDto: UpdateTransactionDto,
+    updateTransactionDto: UpdateTransactionRequest,
   ) {
     const transaction = await this.transactionRepository.findOne({ id });
 
