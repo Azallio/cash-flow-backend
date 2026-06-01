@@ -25,3 +25,17 @@ jobs:
       - name: Push image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/cash-flow-backend:latest
+
+      - name: Deploy to VPS
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+
+          ssh -i key.pem -o StrictHostKeyChecking=no \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd /opt/cash-flow &&
+            docker compose pull &&
+            docker compose up -d
+          "
+
+          rm key.pem
