@@ -1,11 +1,13 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository, FilterQuery } from '@mikro-orm/postgresql';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CategoryService } from '../category/category.service';
+import { PagingArrayResponse } from '../common/DTO/pagingArrayResponse';
+import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
 import { UserService } from '../user/user.service';
-import { CreateTransactionRequest } from './DTO/create-transaction.request';
-import { UpdateTransactionRequest } from './DTO/update-transaction.requets';
+import { CreateTransactionRequest } from './DTO/request/create-transaction.request';
+import { UpdateTransactionRequest } from './DTO/request/update-transaction.request';
 
 @Injectable()
 export class TransactionService {
@@ -25,7 +27,10 @@ export class TransactionService {
 
     const user = await this.userService.getUserById(userId);
 
-    const category = await this.categoryService.getCategoryById(categoryId);
+    const category = await this.categoryService.getCategoryById(
+      categoryId,
+      userId,
+    );
 
     const newTransaction = new TransactionEntity(
       user,
@@ -44,42 +49,56 @@ export class TransactionService {
     return newTransaction;
   }
 
-  public async findAll(userId: number) {
-    return await this.findByUserId(userId);
+  public async findAll(userId: number, paging: PagingQueryRequest) {
+    return await this.findByUserId(userId, paging);
   }
 
-  public async findById(id: number) {
+  public async findById(id: number, userId: number) {
     const transaction = await this.transactionRepository.findOne(
-      { id },
+      { id, user: { id: userId } },
       { populate: ['category', 'user'] },
     );
 
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new NotFoundException('Transaction not found');
     }
 
     return transaction;
   }
 
-  public async findByUserId(userId: number) {
-    const transactions = await this.transactionRepository.find(
+  public async findByUserId(userId: number, paging: PagingQueryRequest) {
+    const [items, totalItems] = await this.transactionRepository.findAndCount(
       { user: { id: userId } },
-      { populate: ['category', 'user'] },
+      {
+        populate: ['category', 'user'],
+        offset: paging.skip,
+        limit: paging.take,
+        orderBy: { createdAt: 'desc' },
+      },
     );
 
-    return transactions;
+    return new PagingArrayResponse(items, totalItems);
   }
 
-  public async searchTransactions(userId: number, categoryId: number) {
-    const transactions = await this.transactionRepository.find(
+  public async searchTransactions(
+    userId: number,
+    categoryId: number,
+    paging: PagingQueryRequest,
+  ) {
+    const [items, totalItems] = await this.transactionRepository.findAndCount(
       {
         user: { id: userId },
         category: { id: categoryId },
       },
-      { populate: ['category', 'user'] },
+      {
+        populate: ['category', 'user'],
+        offset: paging.skip,
+        limit: paging.take,
+        orderBy: { createdAt: 'desc' },
+      },
     );
 
-    return transactions;
+    return new PagingArrayResponse(items, totalItems);
   }
 
   public async findMany(where: FilterQuery<TransactionEntity>) {
@@ -92,12 +111,16 @@ export class TransactionService {
 
   public async updateTransaction(
     id: number,
+    userId: number,
     updateTransactionDto: UpdateTransactionRequest,
   ) {
-    const transaction = await this.transactionRepository.findOne({ id });
+    const transaction = await this.transactionRepository.findOne({
+      id,
+      user: { id: userId },
+    });
 
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new NotFoundException('Transaction not found');
     }
 
     this.transactionRepository.assign(transaction, updateTransactionDto);
@@ -106,11 +129,14 @@ export class TransactionService {
     return transaction;
   }
 
-  public async removeTransaction(id: number) {
-    const transaction = await this.transactionRepository.findOne({ id });
+  public async removeTransaction(id: number, userId: number) {
+    const transaction = await this.transactionRepository.findOne({
+      id,
+      user: { id: userId },
+    });
 
     if (!transaction) {
-      throw new Error('Transaction not found');
+      throw new NotFoundException('Transaction not found');
     }
 
     await this.transactionRepository

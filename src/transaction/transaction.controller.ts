@@ -6,20 +6,26 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiCreatedResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import {
+  ApiCreatedResponseWrapped,
+  ApiOkResponseWrapped,
+  ApiOkResponseWrappedPagingArray,
+} from '../common/DTO/apiResponse';
+import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
-import { CreateTransactionRequest } from './DTO/create-transaction.request';
-import { UpdateTransactionRequest } from './DTO/update-transaction.requets';
+import { CreateTransactionRequest } from './DTO/request/create-transaction.request';
+import { UpdateTransactionRequest } from './DTO/request/update-transaction.request';
+import { TransactionResponse } from './DTO/response/transaction.response';
 import { TransactionService } from './transaction.service';
 
 @ApiTags('Transactions')
@@ -33,18 +39,17 @@ export class TransactionController {
   @ApiOperation({
     summary: 'Create transaction',
   })
-  @ApiCreatedResponse({
+  @ApiCreatedResponseWrapped(TransactionResponse, {
     description: 'Transaction successfully created',
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
-  @ApiOkResponse({
-    type: CreateTransactionRequest,
+  @ApiOkResponseWrapped(TransactionResponse, {
     description: 'Transaction successfully created',
   })
   create(
-    @GetUser('id') userId: number,
+    @GetUser('userId') userId: number,
     @Body() createTransactionRequest: CreateTransactionRequest,
   ) {
     return this.transactionService.createTransaction(
@@ -53,21 +58,27 @@ export class TransactionController {
     );
   }
 
-  @Get(':categoryId')
+  @Get('category/:categoryId')
   @ApiOperation({
     summary: 'Search transactions',
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
-  @ApiOkResponse({
-    description: 'Transactions successfully retrieved',
-  })
+  @ApiOkResponseWrappedPagingArray(
+    TransactionResponse,
+    'Transactions successfully retrieved',
+  )
   search(
-    @GetUser('id') userId: number,
+    @GetUser('userId') userId: number,
     @Param('categoryId') categoryId: number,
+    @Query() paging: PagingQueryRequest,
   ) {
-    return this.transactionService.searchTransactions(userId, categoryId);
+    return this.transactionService.searchTransactions(
+      userId,
+      categoryId,
+      paging,
+    );
   }
 
   @Get()
@@ -77,11 +88,15 @@ export class TransactionController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
-  @ApiOkResponse({
-    description: 'Transactions successfully retrieved',
-  })
-  findAll(@GetUser('id') userId: number) {
-    return this.transactionService.findAll(userId);
+  @ApiOkResponseWrappedPagingArray(
+    TransactionResponse,
+    'Transactions successfully retrieved',
+  )
+  findAll(
+    @GetUser('userId') userId: number,
+    @Query() paging: PagingQueryRequest,
+  ) {
+    return this.transactionService.findAll(userId, paging);
   }
 
   @Get(':id')
@@ -91,11 +106,11 @@ export class TransactionController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
-  @ApiOkResponse({
+  @ApiOkResponseWrapped(TransactionResponse, {
     description: 'Transaction successfully retrieved',
   })
-  findOne(@Param('id') id: string) {
-    return this.transactionService.findById(+id);
+  findOne(@GetUser('userId') userId: number, @Param('id') id: string) {
+    return this.transactionService.findById(+id, userId);
   }
 
   @Patch(':id')
@@ -105,15 +120,19 @@ export class TransactionController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
-  @ApiOkResponse({
-    type: UpdateTransactionRequest,
+  @ApiOkResponseWrapped(TransactionResponse, {
     description: 'Transaction successfully updated',
   })
   update(
+    @GetUser('userId') userId: number,
     @Param('id') id: string,
     @Body() updateTransactionDto: UpdateTransactionRequest,
   ) {
-    return this.transactionService.updateTransaction(+id, updateTransactionDto);
+    return this.transactionService.updateTransaction(
+      +id,
+      userId,
+      updateTransactionDto,
+    );
   }
 
   @Delete(':id')
@@ -123,10 +142,10 @@ export class TransactionController {
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
-  @ApiOkResponse({
+  @ApiOkResponseWrapped(TransactionResponse, {
     description: 'Transaction successfully deleted',
   })
-  remove(@Param('id') id: string) {
-    return this.transactionService.removeTransaction(+id);
+  remove(@GetUser('userId') userId: number, @Param('id') id: string) {
+    return this.transactionService.removeTransaction(+id, userId);
   }
 }

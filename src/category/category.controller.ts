@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -13,15 +14,22 @@ import {
   ApiBearerAuth,
   ApiNotFoundResponse,
   ApiOperation,
-  ApiResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import {
+  ApiCreatedResponseWrapped,
+  ApiOkResponseWrapped,
+  ApiOkResponseWrappedNoData,
+  ApiOkResponseWrappedPagingArray,
+} from '../common/DTO/apiResponse';
+import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
 import { CategoryService } from './category.service';
 import { CreateCategoryRequest } from './DTO/request/create-category.request';
 import { UpdateCategoryRequest } from './DTO/request/update-category.request';
+import { CategoryResponse } from './DTO/response/category.response';
 
 @ApiTags('Categories')
 @UseGuards(JwtAuthGuard)
@@ -34,8 +42,7 @@ export class CategoryController {
     summary: 'Create category for user',
     description: 'Creates a new category and assigns it to a specific user',
   })
-  @ApiResponse({
-    status: 201,
+  @ApiCreatedResponseWrapped(CategoryResponse, {
     description: 'Category successfully created',
   })
   @ApiBadRequestResponse({
@@ -46,7 +53,7 @@ export class CategoryController {
   })
   @Post()
   public async create(
-    @GetUser('id') userId: number,
+    @GetUser('userId') userId: number,
     @Body() dto: CreateCategoryRequest,
   ) {
     return this.categoryService.createCategory(dto, userId);
@@ -56,8 +63,7 @@ export class CategoryController {
     summary: 'Update category',
     description: 'Updates category data by ID',
   })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponseWrapped(CategoryResponse, {
     description: 'Category successfully updated',
   })
   @ApiNotFoundResponse({
@@ -65,44 +71,48 @@ export class CategoryController {
   })
   @Patch(':id')
   public async update(
+    @GetUser('userId') userId: number,
     @Param('id') id: number,
     @Body() dto: UpdateCategoryRequest,
   ) {
-    return await this.categoryService.updateCategory({
-      ...dto,
-      id,
-    });
+    return await this.categoryService.updateCategory(
+      {
+        ...dto,
+        id,
+      },
+      userId,
+    );
   }
 
   @ApiOperation({
     summary: 'Delete category',
     description: 'Deletes category by ID',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Category successfully deleted',
-  })
+  @ApiOkResponseWrappedNoData('Category successfully deleted')
   @ApiNotFoundResponse({
     description: 'Category not found',
   })
   @Delete(':id')
-  public async remove(@Param('id') id: number) {
-    return await this.categoryService.removeCategory(id);
+  public async remove(
+    @GetUser('userId') userId: number,
+    @Param('id') id: number,
+  ) {
+    return await this.categoryService.removeCategory(id, userId);
   }
 
   @ApiOperation({
     summary: 'Get categories for the authenticated user',
     description: 'Returns all categories belonging to the authenticated user',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'List of categories',
-  })
+  @ApiOkResponseWrappedPagingArray(CategoryResponse, 'List of categories')
   @ApiNotFoundResponse({
     description: 'User not found or has no categories',
   })
   @Get()
-  public async get(@GetUser('userId') userId: number) {
-    return await this.categoryService.getCategoriesByUserId(userId);
+  public async get(
+    @GetUser('userId') userId: number,
+    @Query() paging: PagingQueryRequest,
+  ) {
+    return await this.categoryService.getCategoriesByUserId(userId, paging);
   }
 }
