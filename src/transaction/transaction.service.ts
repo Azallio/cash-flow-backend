@@ -70,25 +70,14 @@ export class TransactionService {
     return transactions;
   }
 
-  public async searchTransactions(
-    userId: number,
-    categoryId: number,
-    searchTerm: string,
-  ) {
+  public async searchTransactions(userId: number, categoryId: number) {
     const transactions = await this.transactionRepository.find(
       {
         user: { id: userId },
         category: { id: categoryId },
-        description: { $ilike: `%${searchTerm}%` },
       },
       { populate: ['category', 'user'] },
     );
-
-    if (transactions.length === 0) {
-      return [];
-    } else if (!transactions) {
-      throw new Error('No transactions found matching the search criteria');
-    }
 
     return transactions;
   }
@@ -97,12 +86,6 @@ export class TransactionService {
     const transactions = await this.transactionRepository.find(where, {
       populate: ['category', 'user'],
     });
-
-    if (transactions.length === 0) {
-      return [];
-    } else if (!transactions) {
-      throw new Error('No transactions found matching the search criteria');
-    }
 
     return transactions;
   }

@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -54,7 +53,7 @@ export class TransactionController {
     );
   }
 
-  @Get('search')
+  @Get(':categoryId')
   @ApiOperation({
     summary: 'Search transactions',
   })
@@ -66,14 +65,9 @@ export class TransactionController {
   })
   search(
     @GetUser('id') userId: number,
-    @Query('categoryId') categoryId: number,
-    @Query('searchTerm') searchTerm: string,
+    @Param('categoryId') categoryId: number,
   ) {
-    return this.transactionService.searchTransactions(
-      userId,
-      categoryId,
-      searchTerm,
-    );
+    return this.transactionService.searchTransactions(userId, categoryId);
   }
 
   @Get()
