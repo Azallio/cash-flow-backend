@@ -1,4 +1,4 @@
-name: Build and Push
+name: Build, Push and Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  docker:
+  build_and_push:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,11 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/cash-flow-backend:latest
 
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+
+    steps:
       - name: Deploy to VPS
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem

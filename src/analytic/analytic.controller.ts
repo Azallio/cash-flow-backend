@@ -1,11 +1,11 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ApiOkResponseWrapped } from '../common/DTO/apiResponse';
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
 import { AnalyticService } from './analytic.service';
@@ -30,15 +30,14 @@ export class AnalyticController {
     summary: 'Get general user analytics',
     description: 'Returns total income and expenses for the selected period',
   })
-  @ApiOkResponse({
-    type: GeneralAnalyticResponse,
+  @ApiOkResponseWrapped(GeneralAnalyticResponse, {
     description: 'General analytics successfully returned',
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
   public async getUserGeneralAnalytics(
-    @GetUser('id') userId: number,
+    @GetUser('userId') userId: number,
     @Query() query: GeneralAnalyticRequest,
   ): Promise<GeneralAnalyticResponse> {
     return this.analyticService.getUserGeneralAnalytics(userId, query);
@@ -49,15 +48,14 @@ export class AnalyticController {
     summary: 'Get analytics grouped by category',
     description: 'Returns statistics grouped by transaction categories',
   })
-  @ApiOkResponse({
-    type: AnalyticByCategoryResponse,
+  @ApiOkResponseWrapped(AnalyticByCategoryResponse, {
     description: 'Category analytics successfully returned',
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
   public async getUserCategoryAnalytics(
-    @GetUser('id') userId: number,
+    @GetUser('userId') userId: number,
     @Query() query: AnalyticByCategoryRequest,
   ): Promise<AnalyticByCategoryResponse> {
     return this.analyticService.getUserCategoryAnalytics(userId, query);
@@ -68,15 +66,14 @@ export class AnalyticController {
     summary: 'Get monthly analytics',
     description: 'Returns analytics for a specific month',
   })
-  @ApiOkResponse({
-    type: MonthlyAnalyticResponse,
+  @ApiOkResponseWrapped(MonthlyAnalyticResponse, {
     description: 'Monthly analytics successfully returned',
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
   public async getUserMonthlyAnalytics(
-    @GetUser('id') userId: number,
+    @GetUser('userId') userId: number,
     @Query() query: MonthlyAnalyticRequest,
   ): Promise<MonthlyAnalyticResponse> {
     return this.analyticService.getUserMonthlyAnalytics(userId, query);
@@ -87,15 +84,14 @@ export class AnalyticController {
     summary: 'Get yearly analytics',
     description: 'Returns analytics for a specific year',
   })
-  @ApiOkResponse({
-    type: YearlyAnalyticResponse,
+  @ApiOkResponseWrapped(YearlyAnalyticResponse, {
     description: 'Yearly analytics successfully returned',
   })
   @ApiUnauthorizedResponse({
     description: 'Unauthorized',
   })
   public async getUserYearlyAnalytics(
-    @GetUser('id') userId: number,
+    @GetUser('userId') userId: number,
     @Query() query: YearlyAnalyticRequest,
   ): Promise<YearlyAnalyticResponse> {
     return this.analyticService.getUserYearlyAnalytics(userId, query);

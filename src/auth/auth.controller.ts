@@ -8,12 +8,14 @@ import {
 } from '@nestjs/common';
 import {
   ApiConflictResponse,
-  ApiCreatedResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import {
+  ApiCreatedResponseWrapped,
+  ApiOkResponseWrapped,
+} from '../common/DTO/apiResponse';
 import { AuthService } from './auth.service';
 import { LoginRequest } from './DTO/request/login.request';
 import { RegisterRequest } from './DTO/request/register.request';
@@ -27,7 +29,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
-  @ApiOkResponse({ type: LoginResponse, description: 'JWT tokens returned' })
+  @ApiOkResponseWrapped(LoginResponse, {
+    description: 'JWT tokens returned',
+  })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   public async login(@Body() dto: LoginRequest): Promise<LoginResponse> {
     return this.authService.login(dto);
@@ -36,9 +40,10 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiOkResponse({ type: LoginResponse, description: 'JWT tokens returned' })
-  @ApiCreatedResponse({
-    type: LoginResponse,
+  @ApiOkResponseWrapped(LoginResponse, {
+    description: 'JWT tokens returned',
+  })
+  @ApiCreatedResponseWrapped(LoginResponse, {
     description: 'User registered, JWT tokens returned',
   })
   @ApiConflictResponse({ description: 'User with this email already exists' })
@@ -49,8 +54,7 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh JWT tokens' })
-  @ApiOkResponse({
-    type: LoginResponse,
+  @ApiOkResponseWrapped(LoginResponse, {
     description: 'New JWT tokens returned',
   })
   @ApiUnauthorizedResponse({ description: 'Invalid refresh token' })

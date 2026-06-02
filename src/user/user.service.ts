@@ -6,6 +6,8 @@ import {
   NotFoundException,
   Scope,
 } from '@nestjs/common';
+import { PagingArrayResponse } from '../common/DTO/pagingArrayResponse';
+import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { UserEntity } from '../DAL/entities/user.entity';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -53,7 +55,18 @@ export class UserService {
     await this.userRepository.getEntityManager().remove(user).flush();
   }
 
-  public async findAll(): Promise<UserEntity[]> {
-    return this.userRepository.findAll();
+  public async findAll(
+    paging: PagingQueryRequest,
+  ): Promise<PagingArrayResponse<UserEntity>> {
+    const [items, totalItems] = await this.userRepository.findAndCount(
+      {},
+      {
+        offset: paging.skip,
+        limit: paging.take,
+        orderBy: { createdAt: 'desc' },
+      },
+    );
+
+    return new PagingArrayResponse(items, totalItems);
   }
 }
