@@ -4,6 +4,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CategoryService } from '../category/category.service';
 import { PagingArrayResponse } from '../common/DTO/pagingArrayResponse';
 import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
+import { TransactionType } from '../common/enums/transactions-type.enum';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
 import { UserService } from '../user/user.service';
 import { CreateTransactionRequest } from './DTO/request/create-transaction.request';
@@ -49,8 +50,12 @@ export class TransactionService {
     return newTransaction;
   }
 
-  public async findAll(userId: number, paging: PagingQueryRequest) {
-    return await this.findByUserId(userId, paging);
+  public async findAll(
+    userId: number,
+    paging: PagingQueryRequest,
+    transactionType?: TransactionType,
+  ) {
+    return await this.findByUserId(userId, paging, transactionType);
   }
 
   public async findById(id: number, userId: number) {
@@ -66,9 +71,18 @@ export class TransactionService {
     return transaction;
   }
 
-  public async findByUserId(userId: number, paging: PagingQueryRequest) {
+  public async findByUserId(
+    userId: number,
+    paging: PagingQueryRequest,
+    transactionType?: TransactionType,
+  ) {
+    const where: FilterQuery<TransactionEntity> = {
+      user: { id: userId },
+      ...(transactionType ? { transactionType } : {}),
+    };
+
     const [items, totalItems] = await this.transactionRepository.findAndCount(
-      { user: { id: userId } },
+      where,
       {
         populate: ['category', 'user'],
         offset: paging.skip,
