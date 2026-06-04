@@ -21,10 +21,10 @@ import {
   ApiOkResponseWrappedPagingArray,
 } from '../common/DTO/apiResponse';
 import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
-import { TransactionType } from '../common/enums/transactions-type.enum';
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
 import { CreateTransactionRequest } from './DTO/request/create-transaction.request';
+import { FindAllTransactionsRequest } from './DTO/request/find-all-transactions.request';
 import { UpdateTransactionRequest } from './DTO/request/update-transaction.request';
 import { TransactionResponse } from './DTO/response/transaction.response';
 import { TransactionService } from './transaction.service';
@@ -95,9 +95,9 @@ export class TransactionController {
   )
   findAll(
     @GetUser('userId') userId: number,
-    @Query() paging: PagingQueryRequest,
-    @Query('transactionType') transactionType?: TransactionType,
+    @Query() query: FindAllTransactionsRequest,
   ) {
+    const { transactionType, ...paging } = query;
     return this.transactionService.findAll(userId, paging, transactionType);
   }
 
