@@ -13,22 +13,20 @@ import { YearlyAnalyticResponse } from './DTO/response/yearly-analytic.response'
 export class AnalyticService {
   constructor(private readonly transactionService: TransactionService) {}
 
-  private calculateProfitProcent(
-    currentNetBalance: number,
-    previousNetBalance: number,
+  private calculatePercentChange(
+    currentValue: number,
+    previousValue: number,
   ): number {
-    if (previousNetBalance === 0) {
-      if (currentNetBalance === 0) {
+    if (previousValue === 0) {
+      if (currentValue === 0) {
         return 0;
       }
 
-      return currentNetBalance > 0 ? 100 : -100;
+      return currentValue > 0 ? 100 : -100;
     }
 
     const percent =
-      ((currentNetBalance - previousNetBalance) /
-        Math.abs(previousNetBalance)) *
-      100;
+      ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
 
     return Math.round(percent * 100) / 100;
   }
@@ -122,7 +120,15 @@ export class AnalyticService {
 
     const currentNetBalance = totalIncome - totalExpense;
     const previousNetBalance = previousMonthIncome - previousMonthExpense;
-    const profitProcent = this.calculateProfitProcent(
+    const totalIncomePercent = this.calculatePercentChange(
+      totalIncome,
+      previousMonthIncome,
+    );
+    const totalExpensePercent = this.calculatePercentChange(
+      totalExpense,
+      previousMonthExpense,
+    );
+    const netBalancePercent = this.calculatePercentChange(
       currentNetBalance,
       previousNetBalance,
     );
@@ -132,7 +138,9 @@ export class AnalyticService {
       dto.year,
       totalIncome,
       totalExpense,
-      profitProcent,
+      totalIncomePercent,
+      totalExpensePercent,
+      netBalancePercent,
       transactions,
     );
   }
