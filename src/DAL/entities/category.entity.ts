@@ -1,4 +1,10 @@
-import { Collection, Entity, ManyToOne, OneToMany } from '@mikro-orm/core';
+import {
+  Collection,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  Property,
+} from '@mikro-orm/core';
 import { BaseEntity } from './base.entity';
 import { TransactionEntity } from './transaction.entity';
 import { UserEntity } from './user.entity';
@@ -10,8 +16,10 @@ export class CategoryEntity extends BaseEntity {
   })
   user: UserEntity;
 
+  @Property()
   title: string;
 
+  @Property({ nullable: true })
   description?: string;
 
   @OneToMany(() => TransactionEntity, (transaction) => transaction.category)
