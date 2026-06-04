@@ -13,6 +13,26 @@ import { YearlyAnalyticResponse } from './DTO/response/yearly-analytic.response'
 export class AnalyticService {
   constructor(private readonly transactionService: TransactionService) {}
 
+  private calculateProfitProcent(
+    currentNetBalance: number,
+    previousNetBalance: number,
+  ): number {
+    if (previousNetBalance === 0) {
+      if (currentNetBalance === 0) {
+        return 0;
+      }
+
+      return currentNetBalance > 0 ? 100 : -100;
+    }
+
+    const percent =
+      ((currentNetBalance - previousNetBalance) /
+        Math.abs(previousNetBalance)) *
+      100;
+
+    return Math.round(percent * 100) / 100;
+  }
+
   public async getUserGeneralAnalytics(
     userId: number,
     dto: GeneralAnalyticRequest,
@@ -51,23 +71,68 @@ export class AnalyticService {
     userId: number,
     dto: MonthlyAnalyticRequest,
   ): Promise<MonthlyAnalyticResponse> {
+    const currentMonthStart = new Date(dto.year, dto.month - 1, 1);
+    const currentMonthEnd = new Date(dto.year, dto.month, 0, 23, 59, 59, 999);
+
+    const previousMonthDate = new Date(dto.year, dto.month - 2, 1);
+    const previousMonthStart = new Date(
+      previousMonthDate.getFullYear(),
+      previousMonthDate.getMonth(),
+      1,
+    );
+    const previousMonthEnd = new Date(
+      previousMonthDate.getFullYear(),
+      previousMonthDate.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+
     const transactions = await this.transactionService.findMany({
       user: { id: userId },
       createdAt: {
-        $gte: new Date(dto.year, dto.month - 1, 1),
-        $lte: new Date(dto.year, dto.month, 0),
+        $gte: currentMonthStart,
+        $lte: currentMonthEnd,
       },
     });
+
+    const previousMonthTransactions = await this.transactionService.findMany({
+      user: { id: userId },
+      createdAt: {
+        $gte: previousMonthStart,
+        $lte: previousMonthEnd,
+      },
+    });
+
+    const totalIncome = transactions
+      .filter((t) => t.transactionType === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = transactions
+      .filter((t) => t.transactionType === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const previousMonthIncome = previousMonthTransactions
+      .filter((t) => t.transactionType === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const previousMonthExpense = previousMonthTransactions
+      .filter((t) => t.transactionType === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const currentNetBalance = totalIncome - totalExpense;
+    const previousNetBalance = previousMonthIncome - previousMonthExpense;
+    const profitProcent = this.calculateProfitProcent(
+      currentNetBalance,
+      previousNetBalance,
+    );
 
     return new MonthlyAnalyticResponse(
       dto.month,
       dto.year,
-      transactions
-        .filter((t) => t.transactionType === 'income')
-        .reduce((sum, t) => sum + t.amount, 0),
-      transactions
-        .filter((t) => t.transactionType === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0),
+      totalIncome,
+      totalExpense,
+      profitProcent,
       transactions,
     );
   }

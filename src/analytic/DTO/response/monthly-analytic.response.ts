@@ -16,6 +16,13 @@ export class MonthlyAnalyticResponse {
   netBalance: number;
 
   @ApiProperty({
+    example: -15.75,
+    description:
+      'Percentage change of current month net balance compared to previous month net balance',
+  })
+  profitProcent: number;
+
+  @ApiProperty({
     type: TransactionResponse,
     isArray: true,
   })
@@ -29,6 +36,7 @@ export class MonthlyAnalyticResponse {
     year: number,
     totalIncome: number,
     totalExpense: number,
+    profitProcent: number,
     transactions: TransactionEntity[],
   ) {
     this.month = month;
@@ -36,6 +44,7 @@ export class MonthlyAnalyticResponse {
     this.totalIncome = totalIncome;
     this.totalExpense = totalExpense;
     this.netBalance = totalIncome - totalExpense;
+    this.profitProcent = profitProcent;
     this.transactions = transactions;
   }
 }

@@ -97,8 +97,14 @@ export class TransactionController {
     @GetUser('userId') userId: number,
     @Query() query: FindAllTransactionsRequest,
   ) {
-    const { transactionType, ...paging } = query;
-    return this.transactionService.findAll(userId, paging, transactionType);
+    const { transactionType, startDate, endDate, ...paging } = query;
+    return this.transactionService.findAll(
+      userId,
+      paging,
+      transactionType,
+      startDate,
+      endDate,
+    );
   }
 
   @Get(':id')
