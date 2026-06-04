@@ -44,8 +44,9 @@ class Application {
     const mikroOrm = await MikroORM.init(DatabaseConfig);
     if (cleanUp) await mikroOrm.schema.dropDatabase();
 
-    const migrator = mikroOrm.migrator;
-    await migrator.up();
+    const orm = app.get(MikroORM);
+
+    await orm.migrator.up();
 
     if (seed) {
       const seedService = app.get(SeedService);

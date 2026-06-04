@@ -54,8 +54,16 @@ export class TransactionService {
     userId: number,
     paging: PagingQueryRequest,
     transactionType?: TransactionType,
+    startDate?: string,
+    endDate?: string,
   ) {
-    return await this.findByUserId(userId, paging, transactionType);
+    return await this.findByUserId(
+      userId,
+      paging,
+      transactionType,
+      startDate,
+      endDate,
+    );
   }
 
   public async findById(id: number, userId: number) {
@@ -75,10 +83,25 @@ export class TransactionService {
     userId: number,
     paging: PagingQueryRequest,
     transactionType?: TransactionType,
+    startDate?: string,
+    endDate?: string,
   ) {
+    const createdAtFilter: { $gte?: Date; $lte?: Date } = {};
+
+    if (startDate) {
+      createdAtFilter.$gte = new Date(startDate);
+    }
+
+    if (endDate) {
+      createdAtFilter.$lte = new Date(endDate);
+    }
+
     const where: FilterQuery<TransactionEntity> = {
       user: { id: userId },
       ...(transactionType ? { transactionType } : {}),
+      ...(Object.keys(createdAtFilter).length > 0
+        ? { createdAt: createdAtFilter }
+        : {}),
     };
 
     const [items, totalItems] = await this.transactionRepository.findAndCount(
