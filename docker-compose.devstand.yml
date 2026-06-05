@@ -44,7 +44,7 @@ services:
 
 networks:
   cash-flow-network:
-    driver: bridge
+    external: true
 
 volumes:
   postgres_data_devstand:
