@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TransactionType } from '../../../common/enums/transactions-type.enum';
 
 export class CategoryResponse {
   @ApiProperty({ example: 1 })
@@ -12,6 +13,12 @@ export class CategoryResponse {
     nullable: true,
   })
   description?: string;
+
+  @ApiProperty({
+    example: TransactionType.EXPENSE,
+    enum: TransactionType,
+  })
+  transactionType!: TransactionType;
 
   @ApiProperty({
     example: '2026-06-02T10:00:00.000Z',

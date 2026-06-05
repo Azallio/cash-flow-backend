@@ -121,11 +121,13 @@ export class TransactionService {
     userId: number,
     categoryId: number,
     paging: PagingQueryRequest,
+    transactionType?: TransactionType,
   ) {
     const [items, totalItems] = await this.transactionRepository.findAndCount(
       {
         user: { id: userId },
         category: { id: categoryId },
+        ...(transactionType ? { transactionType } : {}),
       },
       {
         populate: ['category', 'user'],

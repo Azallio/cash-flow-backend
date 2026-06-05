@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { TransactionType } from '../../../common/enums/transactions-type.enum';
 
 export class CreateCategoryRequest {
   @ApiProperty({
@@ -10,6 +11,14 @@ export class CreateCategoryRequest {
   @IsNotEmpty()
   title: string;
 
+  @ApiProperty({
+    description: 'Type of transactions for this category',
+    example: TransactionType.EXPENSE,
+    enum: TransactionType,
+  })
+  @IsEnum(TransactionType)
+  transactionType: TransactionType;
+
   @IsString()
   @IsOptional()
   @ApiProperty({
@@ -19,8 +28,13 @@ export class CreateCategoryRequest {
   })
   description?: string;
 
-  constructor(title: string, description?: string) {
+  constructor(
+    title: string,
+    transactionType: TransactionType,
+    description?: string,
+  ) {
     this.title = title;
+    this.transactionType = transactionType;
     this.description = description;
   }
 }

@@ -22,7 +22,12 @@ export class CategoryService {
   ): Promise<CategoryEntity> {
     const user = await this.userService.getUserById(userId);
 
-    const newCategory = new CategoryEntity(user, dto.title, dto.description);
+    const newCategory = new CategoryEntity(
+      user,
+      dto.title,
+      dto.transactionType,
+      dto.description,
+    );
 
     await this.categoryRepository
       .getEntityManager()
@@ -94,6 +99,9 @@ export class CategoryService {
     }
     if (dto.description) {
       category.description = dto.description;
+    }
+    if (dto.transactionType) {
+      category.transactionType = dto.transactionType;
     }
     await this.categoryRepository.getEntityManager().persist(category).flush();
     return category;

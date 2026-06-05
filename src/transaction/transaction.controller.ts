@@ -20,11 +20,11 @@ import {
   ApiOkResponseWrapped,
   ApiOkResponseWrappedPagingArray,
 } from '../common/DTO/apiResponse';
-import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
 import { CreateTransactionRequest } from './DTO/request/create-transaction.request';
 import { FindAllTransactionsRequest } from './DTO/request/find-all-transactions.request';
+import { SearchTransactionsRequest } from './DTO/request/search-transactions.request';
 import { UpdateTransactionRequest } from './DTO/request/update-transaction.request';
 import { TransactionResponse } from './DTO/response/transaction.response';
 import { TransactionService } from './transaction.service';
@@ -73,12 +73,15 @@ export class TransactionController {
   search(
     @GetUser('userId') userId: number,
     @Param('categoryId') categoryId: number,
-    @Query() paging: PagingQueryRequest,
+    @Query() query: SearchTransactionsRequest,
   ) {
+    const { transactionType, ...paging } = query;
+
     return this.transactionService.searchTransactions(
       userId,
       categoryId,
       paging,
+      transactionType,
     );
   }
 
