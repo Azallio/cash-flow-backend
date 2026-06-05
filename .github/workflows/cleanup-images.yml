@@ -1,0 +1,32 @@
+name: Cleanup Docker Images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup_local:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove local Docker images
+        run: |
+          docker rmi ${{ secrets.DOCKER_USERNAME }}/cash-flow-backend:latest || true
+          docker image prune -f
+
+  cleanup_vps:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove Docker images on VPS
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+
+          ssh -i key.pem -o StrictHostKeyChecking=no \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            docker compose -f /opt/cash-flow/docker-compose.yml down --remove-orphans || true &&
+            docker rmi ${{ secrets.DOCKER_USERNAME }}/cash-flow-backend:latest || true &&
+            docker image prune -f
+          "
+
+          rm key.pem
