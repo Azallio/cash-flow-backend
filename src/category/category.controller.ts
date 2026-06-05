@@ -115,4 +115,25 @@ export class CategoryController {
   ) {
     return await this.categoryService.getCategoriesByUserId(userId, paging);
   }
+
+  @ApiOperation({
+    summary: 'Get category by ID',
+    description: 'Returns a category by ID for the authenticated user',
+  })
+  @ApiOkResponseWrapped(CategoryResponse, {
+    description: 'Category successfully retrieved',
+  })
+  @ApiNotFoundResponse({
+    description: 'Category not found',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid JWT token',
+  })
+  @Get(':id')
+  public async getById(
+    @GetUser('userId') userId: number,
+    @Param('id') id: string,
+  ) {
+    return await this.categoryService.getCategoryById(+id, userId);
+  }
 }
