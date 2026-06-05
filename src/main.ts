@@ -70,6 +70,7 @@ class Application {
     app.useGlobalFilters(new ErrorHandlerMiddleware());
   }
 
+  // Adds no-cache headers to all Swagger routes to prevent caching of API documentation and ensure it always reflects the latest API state
   private async addSwagger(app: INestApplication): Promise<void> {
     app.use(
       [
