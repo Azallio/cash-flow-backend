@@ -16,7 +16,8 @@ services:
     depends_on:
       postgres_db:
         condition: service_healthy
-
+    networks:
+      - cash-flow-network
   postgres_db:
     image: postgres:16-alpine
     container_name: cash-flow-backend-devstand-postgres
@@ -38,6 +39,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - cash-flow-network
+
+networks:
+  cash-flow-network:
+    driver: bridge
 
 volumes:
   postgres_data_devstand:
