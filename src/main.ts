@@ -2,6 +2,7 @@ import { MikroORM } from '@mikro-orm/core';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { ApiResponseFormatMiddleware } from './common/middlewares/apiResponseFormat.middleware';
 import { ErrorHandlerMiddleware } from './common/middlewares/errorHandler.middleware';
@@ -70,6 +71,24 @@ class Application {
   }
 
   private async addSwagger(app: INestApplication): Promise<void> {
+    app.use(
+      [
+        '/api/swagger',
+        '/api/swagger/',
+        '/api/swagger-json',
+        '/api/swagger-yaml',
+      ],
+      (_request: Request, response: Response, next: NextFunction) => {
+        response.setHeader(
+          'Cache-Control',
+          'no-store, no-cache, must-revalidate, proxy-revalidate',
+        );
+        response.setHeader('Pragma', 'no-cache');
+        response.setHeader('Expires', '0');
+        next();
+      },
+    );
+
     const config = new DocumentBuilder()
       .setTitle('Template')
       .setVersion('0.0.1')
