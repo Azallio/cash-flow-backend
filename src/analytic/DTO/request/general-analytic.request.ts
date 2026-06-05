@@ -1,23 +1,19 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
+import { AnalyticPeriod } from '../../../common/enums/analytic-period.enum';
 
 export class GeneralAnalyticRequest {
-  @ApiProperty({
-    description: 'Start date for the analytic query',
-    example: '2023-01-01T00:00:00.000Z',
+  @ApiPropertyOptional({
+    description:
+      'Analytics period type. If omitted, analytics is returned for all time',
+    enum: AnalyticPeriod,
+    example: AnalyticPeriod.MONTH,
   })
-  @IsDateString()
-  startDate: Date;
+  @IsOptional()
+  @IsEnum(AnalyticPeriod)
+  period?: AnalyticPeriod;
 
-  @ApiProperty({
-    description: 'End date for the analytic query',
-    example: '2023-12-31T23:59:59.999Z',
-  })
-  @IsDateString()
-  endDate: Date;
-
-  constructor(startDate: Date, endDate: Date) {
-    this.startDate = startDate;
-    this.endDate = endDate;
+  constructor(period?: AnalyticPeriod) {
+    this.period = period;
   }
 }
