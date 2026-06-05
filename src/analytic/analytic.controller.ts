@@ -11,12 +11,8 @@ import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
 import { AnalyticService } from './analytic.service';
 import { AnalyticByCategoryRequest } from './DTO/request/analytic-by-category.request';
 import { GeneralAnalyticRequest } from './DTO/request/general-analytic.request';
-import { MonthlyAnalyticRequest } from './DTO/request/monthly-analytic.request';
-import { YearlyAnalyticRequest } from './DTO/request/yearly-analytic.request';
 import { AnalyticByCategoryResponse } from './DTO/response/analytic-by-category.response';
 import { GeneralAnalyticResponse } from './DTO/response/general-analytic.response';
-import { MonthlyAnalyticResponse } from './DTO/response/monthly-analytic.response';
-import { YearlyAnalyticResponse } from './DTO/response/yearly-analytic.response';
 
 @ApiTags('Analytics')
 @ApiBearerAuth('jwt')
@@ -25,10 +21,11 @@ import { YearlyAnalyticResponse } from './DTO/response/yearly-analytic.response'
 export class AnalyticController {
   constructor(private readonly analyticService: AnalyticService) {}
 
-  @Get('general')
+  @Get()
   @ApiOperation({
     summary: 'Get general user analytics',
-    description: 'Returns total income and expenses for the selected period',
+    description:
+      'Returns analytics for the current day, month, year, or all time if period is omitted',
   })
   @ApiOkResponseWrapped(GeneralAnalyticResponse, {
     description: 'General analytics successfully returned',
@@ -59,41 +56,5 @@ export class AnalyticController {
     @Query() query: AnalyticByCategoryRequest,
   ): Promise<AnalyticByCategoryResponse> {
     return this.analyticService.getUserCategoryAnalytics(userId, query);
-  }
-
-  @Get('monthly')
-  @ApiOperation({
-    summary: 'Get monthly analytics',
-    description: 'Returns analytics for a specific month',
-  })
-  @ApiOkResponseWrapped(MonthlyAnalyticResponse, {
-    description: 'Monthly analytics successfully returned',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized',
-  })
-  public async getUserMonthlyAnalytics(
-    @GetUser('userId') userId: number,
-    @Query() query: MonthlyAnalyticRequest,
-  ): Promise<MonthlyAnalyticResponse> {
-    return this.analyticService.getUserMonthlyAnalytics(userId, query);
-  }
-
-  @Get('yearly')
-  @ApiOperation({
-    summary: 'Get yearly analytics',
-    description: 'Returns analytics for a specific year',
-  })
-  @ApiOkResponseWrapped(YearlyAnalyticResponse, {
-    description: 'Yearly analytics successfully returned',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized',
-  })
-  public async getUserYearlyAnalytics(
-    @GetUser('userId') userId: number,
-    @Query() query: YearlyAnalyticRequest,
-  ): Promise<YearlyAnalyticResponse> {
-    return this.analyticService.getUserYearlyAnalytics(userId, query);
   }
 }

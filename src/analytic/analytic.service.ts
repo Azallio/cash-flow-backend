@@ -1,17 +1,29 @@
 import { Injectable } from '@nestjs/common';
+import { TransactionEntity } from '../DAL/entities/transaction.entity';
+import { getAnalyticPeriodRange } from '../common/utils/getAnalyticPeriodRange.util';
 import { TransactionService } from '../transaction/transaction.service';
 import { AnalyticByCategoryRequest } from './DTO/request/analytic-by-category.request';
 import { GeneralAnalyticRequest } from './DTO/request/general-analytic.request';
-import { MonthlyAnalyticRequest } from './DTO/request/monthly-analytic.request';
-import { YearlyAnalyticRequest } from './DTO/request/yearly-analytic.request';
 import { AnalyticByCategoryResponse } from './DTO/response/analytic-by-category.response';
 import { GeneralAnalyticResponse } from './DTO/response/general-analytic.response';
-import { MonthlyAnalyticResponse } from './DTO/response/monthly-analytic.response';
-import { YearlyAnalyticResponse } from './DTO/response/yearly-analytic.response';
 
 @Injectable()
 export class AnalyticService {
   constructor(private readonly transactionService: TransactionService) {}
+
+  private calculateTotals(transactions: TransactionEntity[]) {
+    const totalIncome = transactions
+      .filter((transaction) => transaction.transactionType === 'income')
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+    const totalExpense = transactions
+      .filter((transaction) => transaction.transactionType === 'expense')
+      .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    return {
+      totalIncome,
+      totalExpense,
+    };
+  }
 
   private calculatePercentChange(
     currentValue: number,
@@ -35,19 +47,55 @@ export class AnalyticService {
     userId: number,
     dto: GeneralAnalyticRequest,
   ): Promise<GeneralAnalyticResponse> {
+    const { currentStart, currentEnd, previousStart, previousEnd } =
+      getAnalyticPeriodRange(dto.period);
+
     const transactions = await this.transactionService.findMany({
       user: { id: userId },
-      createdAt: { $gte: dto.startDate, $lte: dto.endDate },
+      ...(currentStart != null && currentEnd != null
+        ? {
+            createdAt: {
+              $gte: currentStart,
+              $lte: currentEnd,
+            },
+          }
+        : {}),
     });
 
-    const totalIncome = transactions
-      .filter((t) => t.transactionType === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const totalExpense = transactions
-      .filter((t) => t.transactionType === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+    const { totalIncome, totalExpense } = this.calculateTotals(transactions);
 
-    return new GeneralAnalyticResponse(totalIncome, totalExpense);
+    if (dto.period != null && previousStart != null && previousEnd != null) {
+      const previousTransactions = await this.transactionService.findMany({
+        user: { id: userId },
+        createdAt: {
+          $gte: previousStart,
+          $lte: previousEnd,
+        },
+      });
+
+      const { totalIncome: previousIncome, totalExpense: previousExpense } =
+        this.calculateTotals(previousTransactions);
+
+      const currentNetBalance = totalIncome - totalExpense;
+      const previousNetBalance = previousIncome - previousExpense;
+
+      return new GeneralAnalyticResponse(
+        totalIncome,
+        totalExpense,
+        transactions,
+        dto.period,
+        this.calculatePercentChange(totalIncome, previousIncome),
+        this.calculatePercentChange(totalExpense, previousExpense),
+        this.calculatePercentChange(currentNetBalance, previousNetBalance),
+      );
+    }
+
+    return new GeneralAnalyticResponse(
+      totalIncome,
+      totalExpense,
+      transactions,
+      dto.period,
+    );
   }
 
   public async getUserCategoryAnalytics(
@@ -63,109 +111,5 @@ export class AnalyticService {
     const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
 
     return new AnalyticByCategoryResponse(dto.categoryId, totalAmount);
-  }
-
-  public async getUserMonthlyAnalytics(
-    userId: number,
-    dto: MonthlyAnalyticRequest,
-  ): Promise<MonthlyAnalyticResponse> {
-    const currentMonthStart = new Date(dto.year, dto.month - 1, 1);
-    const currentMonthEnd = new Date(dto.year, dto.month, 0, 23, 59, 59, 999);
-
-    const previousMonthDate = new Date(dto.year, dto.month - 2, 1);
-    const previousMonthStart = new Date(
-      previousMonthDate.getFullYear(),
-      previousMonthDate.getMonth(),
-      1,
-    );
-    const previousMonthEnd = new Date(
-      previousMonthDate.getFullYear(),
-      previousMonthDate.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
-    );
-
-    const transactions = await this.transactionService.findMany({
-      user: { id: userId },
-      createdAt: {
-        $gte: currentMonthStart,
-        $lte: currentMonthEnd,
-      },
-    });
-
-    const previousMonthTransactions = await this.transactionService.findMany({
-      user: { id: userId },
-      createdAt: {
-        $gte: previousMonthStart,
-        $lte: previousMonthEnd,
-      },
-    });
-
-    const totalIncome = transactions
-      .filter((t) => t.transactionType === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const totalExpense = transactions
-      .filter((t) => t.transactionType === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const previousMonthIncome = previousMonthTransactions
-      .filter((t) => t.transactionType === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const previousMonthExpense = previousMonthTransactions
-      .filter((t) => t.transactionType === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const currentNetBalance = totalIncome - totalExpense;
-    const previousNetBalance = previousMonthIncome - previousMonthExpense;
-    const totalIncomePercent = this.calculatePercentChange(
-      totalIncome,
-      previousMonthIncome,
-    );
-    const totalExpensePercent = this.calculatePercentChange(
-      totalExpense,
-      previousMonthExpense,
-    );
-    const netBalancePercent = this.calculatePercentChange(
-      currentNetBalance,
-      previousNetBalance,
-    );
-
-    return new MonthlyAnalyticResponse(
-      dto.month,
-      dto.year,
-      totalIncome,
-      totalExpense,
-      totalIncomePercent,
-      totalExpensePercent,
-      netBalancePercent,
-      transactions,
-    );
-  }
-
-  public async getUserYearlyAnalytics(
-    userId: number,
-    dto: YearlyAnalyticRequest,
-  ): Promise<YearlyAnalyticResponse> {
-    const transactions = await this.transactionService.findMany({
-      user: { id: userId },
-      createdAt: {
-        $gte: new Date(dto.year, 0, 1),
-        $lte: new Date(dto.year, 11, 31),
-      },
-    });
-
-    return new YearlyAnalyticResponse(
-      dto.year,
-      transactions
-        .filter((t) => t.transactionType === 'income')
-        .reduce((sum, t) => sum + t.amount, 0),
-      transactions
-        .filter((t) => t.transactionType === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0),
-      transactions,
-    );
   }
 }
