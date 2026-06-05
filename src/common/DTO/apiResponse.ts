@@ -58,6 +58,10 @@ const buildWrappedSchema = (
           : {
               $ref: getSchemaPath(data),
             },
+        error: {
+          nullable: true,
+          example: null,
+        },
       },
     },
   ],
