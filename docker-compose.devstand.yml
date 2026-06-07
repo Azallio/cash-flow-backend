@@ -23,15 +23,19 @@ services:
     container_name: cash-flow-backend-devstand-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: cash_flow_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: root
+      POSTGRES_DB: ${DB_NAME:-cash_flow_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
     ports:
       - '5432:5432'
     volumes:
       - postgres_data_devstand:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d cash_flow_db']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-cash_flow_db}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
