@@ -4,6 +4,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PagingArrayResponse } from '../common/DTO/pagingArrayResponse';
 import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { CategoryEntity } from '../DAL/entities/category.entity';
+import { TransactionEntity } from '../DAL/entities/transaction.entity';
 import { UserService } from '../user/user.service';
 import { CreateCategoryRequest } from './DTO/request/create-category.request';
 import { UpdateCategoryRequest } from './DTO/request/update-category.request';
@@ -68,17 +69,52 @@ export class CategoryService {
     return category;
   }
 
-  public async removeCategory(id: number, userId: number) {
-    const category = await this.categoryRepository.findOne({
-      id,
-      user: { id: userId },
+  public async removeCategory(id: number, userId: number): Promise<void> {
+    const em = this.categoryRepository.getEntityManager();
+
+    await em.transactional(async (em) => {
+      const category = await em.findOne(CategoryEntity, {
+        id,
+        user: { id: userId },
+      });
+
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+
+      let otherCategory = await em.findOne(CategoryEntity, {
+        user: { id: userId },
+        title: 'Other',
+        transactionType: category.transactionType,
+      });
+
+      if (!otherCategory) {
+        const user = await this.userService.getUserById(userId);
+
+        otherCategory = new CategoryEntity(
+          user,
+          'Other',
+          category.transactionType,
+          'System category',
+        );
+
+        em.persist(otherCategory);
+        await em.flush();
+      }
+
+      await em.nativeUpdate(
+        TransactionEntity,
+        {
+          category: category.id,
+          user: userId,
+        },
+        {
+          category: otherCategory.id,
+        },
+      );
+
+      em.remove(category);
     });
-
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
-
-    await this.categoryRepository.getEntityManager().remove(category).flush();
   }
 
   public async updateCategory(
