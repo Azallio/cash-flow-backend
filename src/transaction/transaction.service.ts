@@ -39,7 +39,7 @@ export class TransactionService {
       transactionType,
       amount,
       description,
-      createdAt ? new Date(createdAt) : new Date(),
+      createdAt ? new Date(createdAt) : new Date(Date.now()),
     );
 
     await this.transactionRepository
