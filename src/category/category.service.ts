@@ -1,5 +1,5 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { EntityRepository } from '@mikro-orm/postgresql';
+import { EntityRepository, FilterQuery } from '@mikro-orm/postgresql';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PagingArrayResponse } from '../common/DTO/pagingArrayResponse';
 import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
@@ -141,5 +141,23 @@ export class CategoryService {
     }
     await this.categoryRepository.getEntityManager().persist(category).flush();
     return category;
+  }
+
+  public async findManyByUserId(
+    userId: number,
+    where: FilterQuery<CategoryEntity>,
+  ): Promise<Array<CategoryEntity>> {
+    const filter: FilterQuery<CategoryEntity> = {
+      $and: [where, { user: { id: userId } }],
+    };
+
+    return await this.categoryRepository.find(
+      {
+        ...filter,
+      },
+      {
+        populate: ['transactions'],
+      },
+    );
   }
 }

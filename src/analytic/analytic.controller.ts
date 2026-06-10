@@ -12,6 +12,7 @@ import { AnalyticService } from './analytic.service';
 import { AnalyticByCategoryRequest } from './DTO/request/analytic-by-category.request';
 import { GeneralAnalyticRequest } from './DTO/request/general-analytic.request';
 import { AnalyticByCategoryResponse } from './DTO/response/analytic-by-category.response';
+import { AnalyticByTopCategoriesResponse } from './DTO/response/analytic-by-top-categories.response';
 import { GeneralAnalyticResponse } from './DTO/response/general-analytic.response';
 
 @ApiTags('Analytics')
@@ -56,5 +57,22 @@ export class AnalyticController {
     @Query() query: AnalyticByCategoryRequest,
   ): Promise<AnalyticByCategoryResponse> {
     return this.analyticService.getUserCategoryAnalytics(userId, query);
+  }
+
+  @Get('top-categories')
+  @ApiOperation({
+    summary: 'Get top categories by transaction amount',
+    description: 'Returns the top categories based on transaction amounts',
+  })
+  @ApiOkResponseWrapped(AnalyticByCategoryResponse, {
+    description: 'Top categories successfully returned',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized',
+  })
+  public async getTopTenCategories(
+    @GetUser('userId') userId: number,
+  ): Promise<AnalyticByTopCategoriesResponse> {
+    return await this.analyticService.getTopTenCategories(userId);
   }
 }
