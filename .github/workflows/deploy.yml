@@ -14,6 +14,16 @@ jobs:
       cancel-in-progress: true
 
     steps:
+      - name: SSH debug
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+
+          ssh -vvv -4 \
+          -i key.pem \
+          -o StrictHostKeyChecking=no \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+
       - name: Deploy branch to VPS using git and Docker Compose
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
