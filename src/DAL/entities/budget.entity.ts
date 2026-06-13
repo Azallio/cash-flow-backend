@@ -11,6 +11,12 @@ export class BudgetEntity extends BaseEntity {
   title: string;
 
   @Property()
+  startPeriod: Date;
+
+  @Property()
+  endPeriod: Date;
+
+  @Property()
   targetAmount: number;
 
   @Property()
@@ -24,6 +30,8 @@ export class BudgetEntity extends BaseEntity {
     title: string,
     targetAmount: number,
     collectedAmount: number,
+    startPeriod: Date,
+    endPeriod: Date,
     description?: string,
   ) {
     super();
@@ -31,6 +39,8 @@ export class BudgetEntity extends BaseEntity {
     this.title = title;
     this.targetAmount = targetAmount;
     this.collectedAmount = collectedAmount;
+    this.startPeriod = startPeriod;
+    this.endPeriod = endPeriod;
     this.description = description;
   }
 }

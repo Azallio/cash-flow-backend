@@ -35,15 +35,35 @@ export class CreateBudgetRequest {
   @IsOptional()
   description?: string;
 
+  @ApiProperty({
+    description: 'Start period of the budget',
+    example: '2024-01-01',
+    required: false,
+  })
+  @IsOptional()
+  startPeriod: Date;
+
+  @ApiProperty({
+    description: 'End period of the budget',
+    example: '2024-12-31',
+    required: false,
+  })
+  @IsOptional()
+  endPeriod: Date;
+
   constructor(
     title: string,
     targetAmount: number,
     collectedAmount: number,
+    startPeriod: Date,
+    endPeriod: Date,
     description?: string,
   ) {
     this.title = title;
     this.targetAmount = targetAmount;
     this.collectedAmount = collectedAmount;
+    this.startPeriod = startPeriod;
+    this.endPeriod = endPeriod;
     this.description = description;
   }
 }

@@ -25,6 +25,8 @@ export class BudgetService {
       createBudgetRequest.title,
       createBudgetRequest.targetAmount,
       createBudgetRequest.collectedAmount,
+      createBudgetRequest.startPeriod,
+      createBudgetRequest.endPeriod,
       createBudgetRequest.description,
     );
 
