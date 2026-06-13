@@ -11,6 +11,7 @@ import { CategoryModule } from './category/category.module';
 import { ConfigModule } from './configuration/config.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { UserModule } from './user/user.module';
+import { BudgetModule } from './budget/budget.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { UserModule } from './user/user.module';
     TransactionModule,
     CategoryModule,
     AnalyticModule,
+    BudgetModule,
   ],
 })
 export class AppModule {}
