@@ -38,7 +38,7 @@
     "class-validator": "^0.14.1",
     "decimal.js": "^10.4.3",
     "dotenv": "^16.4.7",
-    "ethers": "^6.16.0",
+    "ethers": "^5.8.0",
     "nestjs-pino": "^4.3.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

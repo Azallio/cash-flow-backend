@@ -5,6 +5,7 @@ import { CategoryService } from '../category/category.service';
 import { PagingArrayResponse } from '../common/DTO/pagingArrayResponse';
 import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { TransactionType } from '../common/enums/transactions-type.enum';
+import { toRuMinuteDate } from '../common/utils/formatToRuMinuteDate.util';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
 import { UserService } from '../user/user.service';
 import { CreateTransactionRequest } from './DTO/request/create-transaction.request';
@@ -39,7 +40,7 @@ export class TransactionService {
       transactionType,
       amount,
       description,
-      createdAt ? new Date(createdAt) : new Date(Date.now()),
+      toRuMinuteDate(createdAt),
     );
 
     await this.transactionRepository
@@ -89,11 +90,11 @@ export class TransactionService {
     const createdAtFilter: { $gte?: Date; $lte?: Date } = {};
 
     if (startDate) {
-      createdAtFilter.$gte = new Date(startDate);
+      createdAtFilter.$gte = toRuMinuteDate(startDate);
     }
 
     if (endDate) {
-      createdAtFilter.$lte = new Date(endDate);
+      createdAtFilter.$lte = toRuMinuteDate(endDate);
     }
 
     const where: FilterQuery<TransactionEntity> = {

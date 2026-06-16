@@ -26,8 +26,6 @@ services:
       POSTGRES_DB: ${DB_NAME:-cash_flow_db}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
-    ports:
-      - '5432:5432'
     volumes:
       - postgres_data_devstand:/var/lib/postgresql/data
     healthcheck:
