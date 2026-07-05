@@ -5,20 +5,16 @@ import { CategoryEntity } from '../DAL/entities/category.entity';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
 import { UserEntity } from '../DAL/entities/user.entity';
 import { TransactionService } from '../transaction/transaction.service';
-import { UserService } from '../user/user.service';
+import { UserModule } from '../user/user.module';
 import { AnalyticController } from './analytic.controller';
 import { AnalyticService } from './analytic.service';
 
 @Module({
   imports: [
     MikroOrmModule.forFeature([TransactionEntity, CategoryEntity, UserEntity]),
+    UserModule,
   ],
   controllers: [AnalyticController],
-  providers: [
-    AnalyticService,
-    TransactionService,
-    CategoryService,
-    UserService,
-  ],
+  providers: [AnalyticService, TransactionService, CategoryService],
 })
 export class AnalyticModule {}

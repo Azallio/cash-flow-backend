@@ -1,8 +1,13 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository, FilterQuery } from '@mikro-orm/postgresql';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PagingArrayResponse } from '../common/DTO/pagingArrayResponse';
 import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
+import { BudgetEntity } from '../DAL/entities/budget.entity';
 import { CategoryEntity } from '../DAL/entities/category.entity';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
 import { UserService } from '../user/user.service';
@@ -22,19 +27,16 @@ export class CategoryService {
     userId: number,
   ): Promise<CategoryEntity> {
     const user = await this.userService.getUserById(userId);
-
     const newCategory = new CategoryEntity(
       user,
       dto.title,
       dto.transactionType,
       dto.description,
     );
-
     await this.categoryRepository
       .getEntityManager()
       .persist(newCategory)
       .flush();
-
     return newCategory;
   }
 
@@ -50,7 +52,6 @@ export class CategoryService {
         orderBy: { createdAt: 'desc' },
       },
     );
-
     return new PagingArrayResponse(items, totalItems);
   }
 
@@ -61,26 +62,30 @@ export class CategoryService {
     const category = await this.categoryRepository.findOne(
       userId == null ? { id } : { id, user: { id: userId } },
     );
-
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
-
+    if (!category) throw new NotFoundException('Category not found');
     return category;
   }
 
   public async removeCategory(id: number, userId: number): Promise<void> {
     const em = this.categoryRepository.getEntityManager();
 
+    // §4.2 Service-level budget guard (DB RESTRICT is second layer)
+    const activeBudgetsCount = await em.count(BudgetEntity, {
+      category: { id },
+      isActive: true,
+    });
+    if (activeBudgetsCount > 0) {
+      throw new ConflictException(
+        'Category has active budgets. Freeze or remove all budgets before deleting this category.',
+      );
+    }
+
     await em.transactional(async (em) => {
       const category = await em.findOne(CategoryEntity, {
         id,
         user: { id: userId },
       });
-
-      if (!category) {
-        throw new NotFoundException('Category not found');
-      }
+      if (!category) throw new NotFoundException('Category not found');
 
       let otherCategory = await em.findOne(CategoryEntity, {
         user: { id: userId },
@@ -90,27 +95,20 @@ export class CategoryService {
 
       if (!otherCategory) {
         const user = await this.userService.getUserById(userId);
-
         otherCategory = new CategoryEntity(
           user,
           'Other',
           category.transactionType,
           'System category',
         );
-
         em.persist(otherCategory);
         await em.flush();
       }
 
       await em.nativeUpdate(
         TransactionEntity,
-        {
-          category: category.id,
-          user: userId,
-        },
-        {
-          category: otherCategory.id,
-        },
+        { category: category.id, user: userId },
+        { category: otherCategory.id },
       );
 
       em.remove(category);
@@ -125,20 +123,12 @@ export class CategoryService {
       id: dto.id,
       user: { id: userId },
     });
+    if (!category) throw new NotFoundException('Category not found');
 
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
+    if (dto.title) category.title = dto.title;
+    if (dto.description) category.description = dto.description;
+    if (dto.transactionType) category.transactionType = dto.transactionType;
 
-    if (dto.title) {
-      category.title = dto.title;
-    }
-    if (dto.description) {
-      category.description = dto.description;
-    }
-    if (dto.transactionType) {
-      category.transactionType = dto.transactionType;
-    }
     await this.categoryRepository.getEntityManager().persist(category).flush();
     return category;
   }
@@ -150,14 +140,9 @@ export class CategoryService {
     const filter: FilterQuery<CategoryEntity> = {
       $and: [where, { user: { id: userId } }],
     };
-
     return await this.categoryRepository.find(
-      {
-        ...filter,
-      },
-      {
-        populate: ['transactions'],
-      },
+      { ...filter },
+      { populate: ['transactions'] },
     );
   }
 }

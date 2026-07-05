@@ -22,9 +22,6 @@ export class AuthService {
 
   public async login(dto: LoginRequest): Promise<LoginResponse> {
     const user = await this.userService.findByEmail(dto.email);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
 
     await this.checkPassword(dto.password, user.passwordHash);
 

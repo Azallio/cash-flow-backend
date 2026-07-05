@@ -54,8 +54,8 @@
           "enumItems": [],
           "mappedType": "datetime"
         },
-        "user_id": {
-          "name": "user_id",
+        "target_budget_id": {
+          "name": "target_budget_id",
           "type": "int4",
           "unsigned": false,
           "autoincrement": false,
@@ -70,29 +70,48 @@
           "enumItems": [],
           "mappedType": "integer"
         },
-        "title": {
-          "name": "title",
-          "type": "varchar(255)",
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12,2)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
           "unique": false,
-          "length": 255,
+          "length": null,
+          "precision": 12,
+          "scale": 2,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
           "precision": null,
           "scale": null,
           "default": null,
           "comment": null,
-          "enumItems": [],
-          "mappedType": "string"
+          "enumItems": [
+            "income_increase",
+            "budget_reallocation"
+          ],
+          "mappedType": "enum"
         },
-        "target_amount": {
-          "name": "target_amount",
+        "source_budget_id": {
+          "name": "source_budget_id",
           "type": "int4",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "unique": false,
           "length": null,
           "precision": 32,
@@ -102,24 +121,8 @@
           "enumItems": [],
           "mappedType": "integer"
         },
-        "collected_amount": {
-          "name": "collected_amount",
-          "type": "int4",
-          "unsigned": false,
-          "autoincrement": false,
-          "primary": false,
-          "nullable": false,
-          "unique": false,
-          "length": null,
-          "precision": 32,
-          "scale": 0,
-          "default": null,
-          "comment": null,
-          "enumItems": [],
-          "mappedType": "integer"
-        },
-        "description": {
-          "name": "description",
+        "reason": {
+          "name": "reason",
           "type": "varchar(255)",
           "unsigned": false,
           "autoincrement": false,
@@ -133,9 +136,74 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "string"
+        }
+      },
+      "name": "budget_adjustment_entity",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "budget_adjustment_entity_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "budget_adjustment_entity_source_budget_id_foreign": {
+          "columnNames": [
+            "source_budget_id"
+          ],
+          "constraintName": "budget_adjustment_entity_source_budget_id_foreign",
+          "localTableName": "public.budget_adjustment_entity",
+          "referencedTableName": "public.budget_entity",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "set null"
         },
-        "start_period": {
-          "name": "start_period",
+        "budget_adjustment_entity_target_budget_id_foreign": {
+          "columnNames": [
+            "target_budget_id"
+          ],
+          "constraintName": "budget_adjustment_entity_target_budget_id_foreign",
+          "localTableName": "public.budget_adjustment_entity",
+          "referencedTableName": "public.budget_entity",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int4",
+          "unsigned": true,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "timestamptz(6)",
           "unsigned": false,
           "autoincrement": false,
@@ -150,8 +218,8 @@
           "enumItems": [],
           "mappedType": "datetime"
         },
-        "end_period": {
-          "name": "end_period",
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamptz(6)",
           "unsigned": false,
           "autoincrement": false,
@@ -165,6 +233,137 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "period": {
+          "name": "period",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [
+            "monthly",
+            "custom"
+          ],
+          "mappedType": "enum"
+        },
+        "limit_amount": {
+          "name": "limit_amount",
+          "type": "numeric(12,2)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 12,
+          "scale": 2,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "is_auto_generated": {
+          "name": "is_auto_generated",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "month": {
+          "name": "month",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
         }
       },
       "name": "budget_entity",
@@ -183,13 +382,13 @@
       ],
       "checks": [],
       "foreignKeys": {
-        "budget_entity_user_id_foreign": {
+        "budget_entity_category_id_foreign": {
           "columnNames": [
-            "user_id"
+            "category_id"
           ],
-          "constraintName": "budget_entity_user_id_foreign",
+          "constraintName": "budget_entity_category_id_foreign",
           "localTableName": "public.budget_entity",
-          "referencedTableName": "public.user_entity",
+          "referencedTableName": "public.category_entity",
           "referencedColumnNames": [
             "id"
           ],
@@ -340,6 +539,149 @@
           ],
           "constraintName": "category_entity_user_id_foreign",
           "localTableName": "public.category_entity",
+          "referencedTableName": "public.user_entity",
+          "referencedColumnNames": [
+            "id"
+          ],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
+      "nativeEnums": {},
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int4",
+          "unsigned": true,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "month": {
+          "name": "month",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "projected_income": {
+          "name": "projected_income",
+          "type": "numeric(12,2)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 12,
+          "scale": 2,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "decimal"
+        }
+      },
+      "name": "monthly_budget_plan_entity",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": [
+            "id"
+          ],
+          "composite": false,
+          "constraint": false,
+          "keyName": "monthly_budget_plan_entity_pkey",
+          "unique": true,
+          "primary": true
+        },
+        {
+          "columnNames": [
+            "user_id",
+            "month"
+          ],
+          "composite": true,
+          "constraint": true,
+          "keyName": "monthly_budget_plan_entity_user_id_month_unique",
+          "unique": true,
+          "primary": false
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "monthly_budget_plan_entity_user_id_foreign": {
+          "columnNames": [
+            "user_id"
+          ],
+          "constraintName": "monthly_budget_plan_entity_user_id_foreign",
+          "localTableName": "public.monthly_budget_plan_entity",
           "referencedTableName": "public.user_entity",
           "referencedColumnNames": [
             "id"
@@ -657,7 +999,7 @@
             "id"
           ],
           "updateRule": "cascade",
-          "deleteRule": "no action"
+          "deleteRule": "cascade"
         }
       },
       "nativeEnums": {},

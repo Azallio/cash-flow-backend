@@ -1,5 +1,6 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/postgresql';
+import { Injectable } from '@nestjs/common';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { createHash } from 'crypto';
 import { JwtPayload } from '../common/models/jwtPayload';
@@ -7,6 +8,7 @@ import { ConfigService } from '../configuration/config.service';
 import { RefreshTokenEntity } from '../DAL/entities/refresh-token.entity';
 import { UserEntity } from '../DAL/entities/user.entity';
 
+@Injectable()
 export class JwtService extends NestJwtService {
   constructor(
     @InjectRepository(RefreshTokenEntity)
@@ -47,8 +49,6 @@ export class JwtService extends NestJwtService {
       secretTokenHash,
       expires,
     );
-
-    refreshToken.expiresAt = expires;
 
     await this.refreshTokenRepository
       .getEntityManager()

@@ -1,4 +1,4 @@
 import { PartialType } from '@nestjs/swagger';
-import { CreateBudgetRequest } from './create-budget.request';
+import { CreateBudgetDto } from './create-budget.request';
 
-export class UpdateBudgetRequest extends PartialType(CreateBudgetRequest) {}
+export class UpdateBudgetDto extends PartialType(CreateBudgetDto) {}

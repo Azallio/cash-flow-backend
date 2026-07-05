@@ -6,7 +6,7 @@ import { UserEntity } from './user.entity';
 
 @Entity()
 export class TransactionEntity extends BaseEntity {
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, { deleteRule: 'cascade' })
   user: UserEntity;
 
   @ManyToOne(() => CategoryEntity)
@@ -30,7 +30,6 @@ export class TransactionEntity extends BaseEntity {
     createdAt?: Date,
   ) {
     super(createdAt);
-
     this.user = user;
     this.category = category;
     this.transactionType = transactionType;
