@@ -7,6 +7,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
   ApiNotFoundResponse,
@@ -21,11 +22,13 @@ import {
 } from '../common/DTO/apiResponse';
 import { PagingQueryRequest } from '../common/DTO/pagingQueryRequest';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
+import { SelfOrRolesGuard } from '../common/middlewares/guards/selfOrRoles.guard';
 import { RequestWithUser } from './DTO/request/request-with-user.request';
 import { UserResponse } from './DTO/response/user.response';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
+@UseGuards(AuthGuard('jwt'), SelfOrRolesGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -56,7 +59,6 @@ export class UserController {
     'List of users returned successfully',
   )
   @ApiBearerAuth('jwt')
-  @UseGuards(JwtAuthGuard)
   @ApiUnauthorizedResponse({ description: 'Invalid or missing JWT token' })
   @Get()
   public async getAllUsers(@Query() paging: PagingQueryRequest) {
@@ -72,7 +74,6 @@ export class UserController {
     description: 'User with given ID not found',
   })
   @ApiBearerAuth('jwt')
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   public async deleteUser(@Param('id') id: number) {
     await this.userService.deleteUser(id);

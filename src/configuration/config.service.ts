@@ -28,6 +28,15 @@ export class ConfigService {
     };
   }
 
+  // Admin credentials
+  get adminEmail(): string {
+    return this.readString('ADMIN_EMAIL');
+  }
+
+  get adminPassword(): string {
+    return this.readString('ADMIN_PASSWORD');
+  }
+
   // Helpers
   private readString(propertyName: string): string {
     const value = this._configuration.get<string>(propertyName);
