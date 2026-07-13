@@ -1,159 +1,274 @@
+// analytics.service.ts
+import { raw } from '@mikro-orm/core';
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { CategoryEntity } from '../DAL/entities/category.entity';
+import Decimal from 'decimal.js';
+import { TransactionType } from '../common/enums/transactions-type.enum';
+import {
+  CategoryBreakdownItem,
+  MetricWithChange,
+  OverviewResponse,
+  TimeSeriesPoint,
+} from '../common/interfaces/analytics.interfaces';
 import { TransactionEntity } from '../DAL/entities/transaction.entity';
-import { CategoryService } from '../category/category.service';
-import { TopAnalyticObject } from '../common/types/top-analytic-object.type';
-import { getAnalyticPeriodRange } from '../common/utils/getAnalyticPeriodRange.util';
-import { TransactionService } from '../transaction/transaction.service';
-import { AnalyticByCategoryRequest } from './DTO/request/analytic-by-category.request';
-import { GeneralAnalyticRequest } from './DTO/request/general-analytic.request';
-import { AnalyticByCategoryResponse } from './DTO/response/analytic-by-category.response';
-import { AnalyticByTopCategoriesResponse } from './DTO/response/analytic-by-top-categories.response';
-import { GeneralAnalyticResponse } from './DTO/response/general-analytic.response';
+import { Granularity } from './DTO/request/dynamics-query.dto';
+
+interface TypeTotalsRow {
+  income: string;
+  expense: string;
+}
+
+interface TimeSeriesRow {
+  bucket: string;
+  income: string;
+  expense: string;
+}
+
+interface CategoryTotalRow {
+  categoryId: number;
+  categoryName: string;
+  total: string;
+}
 
 @Injectable()
-export class AnalyticService {
+export class AnalyticsService {
   constructor(
-    private readonly transactionService: TransactionService,
-    private readonly categoryService: CategoryService,
+    @InjectRepository(TransactionEntity)
+    private readonly transactionRepository: EntityRepository<TransactionEntity>,
   ) {}
 
-  private calculateTotals(transactions: TransactionEntity[]) {
-    const totalIncome = transactions
-      .filter((transaction) => transaction.transactionType === 'income')
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
-    const totalExpense = transactions
-      .filter((transaction) => transaction.transactionType === 'expense')
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
+  // ---------------------------------------------------------------------
+  // Public: composed responses for specific dashboard widgets
+  // ---------------------------------------------------------------------
+
+  /**
+   * Данные для четырёх верхних карточек: Доходы, Расходы, Сбережения, Баланс.
+   * Каждая карточка = текущее значение за период + значение за такой же по
+   * длине предыдущий период + % изменения между ними.
+   */
+  public async getOverview(
+    userId: number,
+    from: Date,
+    to: Date,
+  ): Promise<OverviewResponse> {
+    const { prevFrom, prevTo } = this.getPreviousPeriodRange(from, to);
+
+    const [currentTotals, previousTotals, currentBalance, previousBalance] =
+      await Promise.all([
+        this.getTypeTotals(userId, from, to),
+        this.getTypeTotals(userId, prevFrom, prevTo),
+        this.getBalanceAsOf(userId, to),
+        this.getBalanceAsOf(userId, prevTo),
+      ]);
+
+    const currentSavings = currentTotals.income.minus(currentTotals.expense);
+    const previousSavings = previousTotals.income.minus(previousTotals.expense);
 
     return {
-      totalIncome,
-      totalExpense,
+      income: this.toMetricWithChange(
+        currentTotals.income,
+        previousTotals.income,
+      ),
+      expense: this.toMetricWithChange(
+        currentTotals.expense,
+        previousTotals.expense,
+      ),
+      savings: this.toMetricWithChange(currentSavings, previousSavings),
+      balance: this.toMetricWithChange(currentBalance, previousBalance),
     };
   }
 
-  private calculatePercentChange(
-    currentValue: number,
-    previousValue: number,
-  ): number {
-    if (previousValue === 0) {
-      if (currentValue === 0) {
-        return 0;
-      }
+  /**
+   * Временной ряд для графика "Динамика доходов и расходов".
+   * granularity определяет размер бакета (день/неделя/месяц) — вся
+   * агрегация происходит в БД через date_trunc, на клиент уходят уже
+   * готовые точки.
+   */
+  public async getDynamics(
+    userId: number,
+    from: Date,
+    to: Date,
+    granularity: Granularity,
+  ): Promise<TimeSeriesPoint[]> {
+    const em =
+      this.transactionRepository.getEntityManager() as unknown as EntityManager;
 
-      return currentValue > 0 ? 100 : -100;
-    }
+    const bucketExpr = `date_trunc('${granularity}', t.created_at)`;
 
-    const percent =
-      ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+    const rows = await em
+      .createQueryBuilder(TransactionEntity, 't')
+      .select([
+        raw(`${bucketExpr} as bucket`),
+        raw(
+          `COALESCE(SUM(CASE WHEN t.transaction_type = '${TransactionType.INCOME}' THEN t.amount ELSE 0 END), 0)::text as income`,
+        ),
+        raw(
+          `COALESCE(SUM(CASE WHEN t.transaction_type = '${TransactionType.EXPENSE}' THEN t.amount ELSE 0 END), 0)::text as expense`,
+        ),
+      ])
+      .where({ user: userId, createdAt: { $gte: from, $lt: to } })
+      .groupBy(raw(bucketExpr)) // группируем по тому же raw-выражению, не по алиасу
+      .orderBy({ [raw(bucketExpr) as any]: 'ASC' })
+      .execute<TimeSeriesRow[]>('all');
 
-    return Math.round(percent * 100) / 100;
+    return rows.map((r) => ({
+      bucket: new Date(r.bucket).toISOString(),
+      income: new Decimal(r.income).toFixed(2),
+      expense: new Decimal(r.expense).toFixed(2),
+    }));
   }
 
-  public async getUserGeneralAnalytics(
+  /**
+   * Разбивка по категориям для донат-чартов ("Расходы по категориям",
+   * "Топ категорий расходов"). type по умолчанию EXPENSE — под текущие
+   * виджеты дашборда, но параметризуем на случай будущего разреза по INCOME.
+   */
+  public async getCategoryBreakdown(
     userId: number,
-    dto: GeneralAnalyticRequest,
-  ): Promise<GeneralAnalyticResponse> {
-    const { currentStart, currentEnd, previousStart, previousEnd } =
-      getAnalyticPeriodRange(dto.period);
+    from: Date,
+    to: Date,
+    type: TransactionType = TransactionType.EXPENSE,
+    limit?: number,
+  ): Promise<CategoryBreakdownItem[]> {
+    const em =
+      this.transactionRepository.getEntityManager() as unknown as EntityManager;
 
-    const transactions = await this.transactionService.findMany({
-      user: { id: userId },
-      ...(currentStart != null && currentEnd != null
-        ? {
-            createdAt: {
-              $gte: currentStart,
-              $lte: currentEnd,
-            },
-          }
-        : {}),
+    const qb = em
+      .createQueryBuilder(TransactionEntity, 't')
+      .select([
+        't.category_id as categoryId',
+        'c.name as categoryName',
+        'SUM(t.amount)::text as total',
+      ])
+      .join('t.category', 'c')
+      .where({
+        user: userId,
+        transactionType: type,
+        createdAt: { $gte: from, $lt: to },
+      })
+      .groupBy(['t.category_id', 'c.name'])
+      .orderBy({ total: 'DESC' });
+
+    if (limit) qb.limit(limit);
+
+    const rows = await qb.execute<CategoryTotalRow[]>('all');
+
+    const grandTotal = rows.reduce(
+      (acc, r) => acc.plus(new Decimal(r.total)),
+      new Decimal('0'),
+    );
+
+    return rows.map((r) => {
+      const total = new Decimal(r.total);
+      const percent = grandTotal.isZero()
+        ? 0
+        : total.div(grandTotal).mul(100).toDecimalPlaces(1).toNumber();
+
+      return {
+        categoryId: r.categoryId,
+        categoryName: r.categoryName,
+        total: total.toFixed(2),
+        percent,
+      };
     });
-
-    const { totalIncome, totalExpense } = this.calculateTotals(transactions);
-
-    if (dto.period != null && previousStart != null && previousEnd != null) {
-      const previousTransactions = await this.transactionService.findMany({
-        user: { id: userId },
-        createdAt: {
-          $gte: previousStart,
-          $lte: previousEnd,
-        },
-      });
-
-      const { totalIncome: previousIncome, totalExpense: previousExpense } =
-        this.calculateTotals(previousTransactions);
-
-      const currentNetBalance = totalIncome - totalExpense;
-      const previousNetBalance = previousIncome - previousExpense;
-
-      return new GeneralAnalyticResponse(
-        totalIncome,
-        totalExpense,
-        transactions,
-        dto.period,
-        this.calculatePercentChange(totalIncome, previousIncome),
-        this.calculatePercentChange(totalExpense, previousExpense),
-        this.calculatePercentChange(currentNetBalance, previousNetBalance),
-      );
-    }
-
-    return new GeneralAnalyticResponse(
-      totalIncome,
-      totalExpense,
-      transactions,
-      dto.period,
-    );
   }
 
-  public async getUserCategoryAnalytics(
+  // ---------------------------------------------------------------------
+  // Private: low-level reusable aggregations
+  // ---------------------------------------------------------------------
+
+  /** Сумма доходов и расходов пользователя за период. */
+  private async getTypeTotals(
     userId: number,
-    dto: AnalyticByCategoryRequest,
-  ): Promise<AnalyticByCategoryResponse> {
-    const transactions = await this.transactionService.findMany({
-      user: { id: userId },
-      category: { id: dto.categoryId },
-      createdAt: { $gte: dto.startDate, $lte: dto.endDate },
-    });
+    from: Date,
+    to: Date,
+  ): Promise<{ income: Decimal; expense: Decimal }> {
+    const em =
+      this.transactionRepository.getEntityManager() as unknown as EntityManager;
 
-    const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const rows = await em
+      .createQueryBuilder(TransactionEntity, 't')
+      .select([
+        raw(
+          `COALESCE(SUM(CASE WHEN t.transaction_type = '${TransactionType.INCOME}' THEN t.amount ELSE 0 END), 0)::text as income`,
+        ),
+        raw(
+          `COALESCE(SUM(CASE WHEN t.transaction_type = '${TransactionType.EXPENSE}' THEN t.amount ELSE 0 END), 0)::text as expense`,
+        ),
+      ])
+      .where({ user: userId, createdAt: { $gte: from, $lt: to } })
+      .execute<TypeTotalsRow[]>('get');
 
-    return new AnalyticByCategoryResponse(dto.categoryId, totalAmount);
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return {
+      income: new Decimal(row?.income ?? '0'),
+      expense: new Decimal(row?.expense ?? '0'),
+    };
   }
 
-  public async getTopTenCategories(
-    userId: number,
-  ): Promise<AnalyticByTopCategoriesResponse> {
-    const categories = await this.categoryService.getCategoriesByUserId(
-      userId,
-      {
-        take: 100,
-        skip: 0,
-      },
-    );
+  /**
+   * Накопленный баланс пользователя на конец дня asOf: сумма ВСЕХ
+   * транзакций с начала учёта (income - expense), а не только за период.
+   * Это "остаток на счетах", в отличие от "сбережений за период".
+   */
+  private async getBalanceAsOf(userId: number, asOf: Date): Promise<Decimal> {
+    const em =
+      this.transactionRepository.getEntityManager() as unknown as EntityManager;
 
-    const topCategoriesByIncome: TopAnalyticObject<CategoryEntity>[] = [];
-    const topCategoriesByExpense: TopAnalyticObject<CategoryEntity>[] = [];
+    const rows = await em
+      .createQueryBuilder(TransactionEntity, 't')
+      .select(
+        raw(
+          `COALESCE(SUM(CASE WHEN t.transaction_type = '${TransactionType.INCOME}' THEN t.amount ELSE -t.amount END), 0)::text as balance`,
+        ),
+      )
+      .where({ user: userId, createdAt: { $lt: asOf } })
+      .execute<{ balance: string }[]>('get');
 
-    for (const category of categories.items) {
-      const transactions = await this.transactionService.findMany({
-        user: { id: userId },
-        category: { id: category.id },
-      });
-      const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return new Decimal(row?.balance ?? '0');
+  }
 
-      if (category.transactionType === 'income') {
-        topCategoriesByIncome.push({ itemOfTop: category, totalAmount });
-      } else if (category.transactionType === 'expense') {
-        topCategoriesByExpense.push({ itemOfTop: category, totalAmount });
-      }
+  /**
+   * Сдвигает диапазон [from, to) на его же длину назад — для сравнения
+   * "текущий период vs такой же по длине предыдущий". Не привязано к
+   * календарным месяцам специально: работает для любого произвольного
+   * диапазона, который выберет пользователь на фронте.
+   */
+  private getPreviousPeriodRange(
+    from: Date,
+    to: Date,
+  ): { prevFrom: Date; prevTo: Date } {
+    const durationMs = to.getTime() - from.getTime();
+    return {
+      prevFrom: new Date(from.getTime() - durationMs),
+      prevTo: new Date(from.getTime()),
+    };
+  }
+
+  private toMetricWithChange(
+    current: Decimal,
+    previous: Decimal,
+  ): MetricWithChange {
+    return {
+      current: current.toFixed(2),
+      previous: previous.toFixed(2),
+      changePercent: previous.isZero()
+        ? null // нельзя посчитать % изменения от нуля — фронт должен показать это как "—" или "новое"
+        : current
+            .minus(previous)
+            .div(previous)
+            .mul(100)
+            .toDecimalPlaces(1)
+            .toNumber(),
+    };
+  }
+
+  private assertGranularity(value: Granularity): Granularity {
+    if (!Object.values(Granularity).includes(value)) {
+      throw new Error(`Invalid granularity: ${value}`);
     }
-
-    topCategoriesByIncome.sort((a, b) => b.totalAmount - a.totalAmount);
-    topCategoriesByExpense.sort((a, b) => b.totalAmount - a.totalAmount);
-
-    return new AnalyticByTopCategoriesResponse(
-      topCategoriesByIncome,
-      topCategoriesByExpense,
-    );
+    return value;
   }
 }

@@ -1,78 +1,115 @@
+// analytics.controller.ts
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ApiOkResponseWrapped } from '../common/DTO/apiResponse';
+import { TransactionType } from '../common/enums/transactions-type.enum';
 import { GetUser } from '../common/middlewares/decorators/user/getUser';
 import { JwtAuthGuard } from '../common/middlewares/guards/jwt-auth.guard';
-import { AnalyticService } from './analytic.service';
-import { AnalyticByCategoryRequest } from './DTO/request/analytic-by-category.request';
-import { GeneralAnalyticRequest } from './DTO/request/general-analytic.request';
-import { AnalyticByCategoryResponse } from './DTO/response/analytic-by-category.response';
-import { AnalyticByTopCategoriesResponse } from './DTO/response/analytic-by-top-categories.response';
-import { GeneralAnalyticResponse } from './DTO/response/general-analytic.response';
+import { AnalyticsPeriodDto } from './DTO/request/analytics-period.dto';
+import { CategoryBreakdownQueryDto } from './DTO/request/category-breakdown-query.dto';
+import { DynamicsQueryDto } from './DTO/request/dynamics-query.dto';
+import { CategoryBreakdownItemResponse } from './DTO/response/category-breakdown-item.response';
+import { OverviewResponse } from './DTO/response/overview.response';
+import { TimeSeriesPointResponse } from './DTO/response/time-series-point.response';
+import { AnalyticsService } from './analytic.service';
 
 @ApiTags('Analytics')
-@ApiBearerAuth('jwt')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('analytics')
-export class AnalyticController {
-  constructor(private readonly analyticService: AnalyticService) {}
+export class AnalyticsController {
+  constructor(private readonly analyticsService: AnalyticsService) {}
 
-  @Get()
+  @Get('overview')
   @ApiOperation({
-    summary: 'Get general user analytics',
+    summary: 'Сводка по дашборду',
     description:
-      'Returns analytics for the current day, month, year, or all time if period is omitted',
+      'Доходы, расходы, сбережения и баланс за период с сравнением к предыдущему периоду такой же длины. Используется для 4 верхних карточек дашборда.',
   })
-  @ApiOkResponseWrapped(GeneralAnalyticResponse, {
-    description: 'General analytics successfully returned',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized',
-  })
-  public async getUserGeneralAnalytics(
+  @ApiOkResponse({ type: OverviewResponse })
+  async overview(
     @GetUser('userId') userId: number,
-    @Query() query: GeneralAnalyticRequest,
-  ): Promise<GeneralAnalyticResponse> {
-    return this.analyticService.getUserGeneralAnalytics(userId, query);
+    @Query() query: AnalyticsPeriodDto,
+  ): Promise<OverviewResponse> {
+    const { from, to } = this.resolvePeriod(query);
+    return this.analyticsService.getOverview(userId, from, to);
   }
 
-  @Get('category')
+  @Get('dynamics')
   @ApiOperation({
-    summary: 'Get analytics grouped by category',
-    description: 'Returns statistics grouped by transaction categories',
+    summary: 'Динамика доходов и расходов',
+    description:
+      'Временной ряд сумм доходов/расходов, сгруппированный по дню/неделе/месяцу. Источник данных для линейного графика.',
   })
-  @ApiOkResponseWrapped(AnalyticByCategoryResponse, {
-    description: 'Category analytics successfully returned',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized',
-  })
-  public async getUserCategoryAnalytics(
+  @ApiOkResponse({ type: TimeSeriesPointResponse, isArray: true })
+  async dynamics(
     @GetUser('userId') userId: number,
-    @Query() query: AnalyticByCategoryRequest,
-  ): Promise<AnalyticByCategoryResponse> {
-    return this.analyticService.getUserCategoryAnalytics(userId, query);
+    @Query() query: DynamicsQueryDto,
+  ): Promise<TimeSeriesPointResponse[]> {
+    const { from, to } = this.resolvePeriod(query);
+    return this.analyticsService.getDynamics(
+      userId,
+      from,
+      to,
+      query.granularity,
+    );
+  }
+
+  @Get('categories')
+  @ApiOperation({
+    summary: 'Расходы по категориям',
+    description:
+      'Разбивка расходов по всем категориям за период с процентной долей каждой. Источник данных для donut-чарта "Расходы по категориям".',
+  })
+  @ApiOkResponse({ type: CategoryBreakdownItemResponse, isArray: true })
+  async categories(
+    @GetUser('userId') userId: number,
+    @Query() query: CategoryBreakdownQueryDto,
+  ): Promise<CategoryBreakdownItemResponse[]> {
+    const { from, to } = this.resolvePeriod(query);
+    return this.analyticsService.getCategoryBreakdown(
+      userId,
+      from,
+      to,
+      TransactionType.EXPENSE,
+      query.limit,
+    );
   }
 
   @Get('top-categories')
   @ApiOperation({
-    summary: 'Get top categories by transaction amount',
-    description: 'Returns the top categories based on transaction amounts',
+    summary: 'Топ категорий расходов',
+    description:
+      'То же самое, что /categories, но с дефолтным лимитом в 6 категорий — под виджет "Топ категорий расходов" на дашборде.',
   })
-  @ApiOkResponseWrapped(AnalyticByCategoryResponse, {
-    description: 'Top categories successfully returned',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Unauthorized',
-  })
-  public async getTopTenCategories(
+  @ApiOkResponse({ type: CategoryBreakdownItemResponse, isArray: true })
+  async topCategories(
     @GetUser('userId') userId: number,
-  ): Promise<AnalyticByTopCategoriesResponse> {
-    return await this.analyticService.getTopTenCategories(userId);
+    @Query() query: CategoryBreakdownQueryDto,
+  ): Promise<CategoryBreakdownItemResponse[]> {
+    const { from, to } = this.resolvePeriod(query);
+    return this.analyticsService.getCategoryBreakdown(
+      userId,
+      from,
+      to,
+      TransactionType.EXPENSE,
+      query.limit ?? 6,
+    );
+  }
+
+  private resolvePeriod(query: AnalyticsPeriodDto): { from: Date; to: Date } {
+    if (query.from && query.to) {
+      return { from: new Date(query.from), to: new Date(query.to) };
+    }
+    const now = new Date();
+    const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const to = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
+    return { from, to };
   }
 }

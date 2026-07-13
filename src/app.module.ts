@@ -5,13 +5,13 @@ import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import { stdSerializers } from 'pino-http';
 import { DatabaseModule } from './DAL/database.module';
-import { AnalyticModule } from './analytic/analytic.module';
+import { AnalyticsModule } from './analytic/analytic.module';
 import { AuthModule } from './auth/auth.module';
+import { BudgetModule } from './budget/budget.module';
 import { CategoryModule } from './category/category.module';
 import { ConfigModule } from './configuration/config.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { UserModule } from './user/user.module';
-import { BudgetModule } from './budget/budget.module';
 
 @Module({
   imports: [
@@ -40,7 +40,7 @@ import { BudgetModule } from './budget/budget.module';
     }),
     TransactionModule,
     CategoryModule,
-    AnalyticModule,
+    AnalyticsModule,
     BudgetModule,
   ],
 })
