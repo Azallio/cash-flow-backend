@@ -1,3 +1,4 @@
+import { raw } from '@mikro-orm/core';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable, Logger } from '@nestjs/common';
@@ -256,7 +257,7 @@ export class BudgetGenerationService {
     const resolvedEm = this.resolveEm(em);
     const qb = resolvedEm
       .createQueryBuilder(TransactionEntity, 't')
-      .select('SUM(t.amount) as total, COUNT(*) as cnt')
+      .select(raw('SUM(t.amount) as total'), raw('COUNT(t.id) as cnt'))
       .where({
         'user.id': userId,
         transactionType: TransactionType.INCOME,
@@ -285,7 +286,7 @@ export class BudgetGenerationService {
     const resolvedEm = this.resolveEm(em);
     const qb = resolvedEm
       .createQueryBuilder(TransactionEntity, 't')
-      .select(['t.category_id as categoryId', 'SUM(t.amount) as total'])
+      .select(['t.category_id as categoryId', raw('SUM(t.amount)').as('total')])
       .where({
         'user.id': userId,
         transactionType: TransactionType.EXPENSE,
